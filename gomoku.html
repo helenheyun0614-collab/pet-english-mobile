@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gomoku - Five in a Row</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .player-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #333;
+        }
+
+        .player-indicator.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
+        }
+
+        .player-indicator.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+        }
+
+        .current-turn {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(15, 40px);
+            grid-template-rows: repeat(15, 40px);
+            gap: 0;
+            background: #dcb35c;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #8b6914;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            transition: background-color 0.2s;
+        }
+
+        .cell:hover:not(.occupied) {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .cell.occupied {
+            cursor: not-allowed;
+        }
+
+        .piece {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            position: absolute;
+            transition: transform 0.2s;
+        }
+
+        .piece.black {
+            background: radial-gradient(circle at 30% 30%, #555, #000);
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .piece.white {
+            background: radial-gradient(circle at 30% 30%, #fff, #ddd);
+            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            border: 1px solid #999;
+        }
+
+        .piece.winning {
+            animation: pulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(1);
+            }
+            to {
+                transform: scale(1.1);
+            }
+        }
+
+        .winner-message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #28a745;
+            color: white;
+            border-radius: 10px;
+            font-size: 1.3em;
+            font-weight: bold;
+            display: none;
+        }
+
+        .winner-message.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .reset-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 Gomoku</h1>
+
+        <div class="info-panel">
+            <div class="player-info">
+                <div class="player-indicator black"></div>
+                <span>Player 1 (Black)</span>
+            </div>
+            <div class="current-turn" id="currentTurn">Black's Turn</div>
+            <div class="player-info">
+                <div class="player-indicator white"></div>
+                <span>Player 2 (White)</span>
+            </div>
+        </div>
+
+        <div class="board" id="board"></div>
+
+        <div class="winner-message" id="winnerMessage"></div>
+
+        <div class="button-container">
+            <button class="reset-btn" onclick="resetGame()">🔄 New Game</button>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_SIZE = 15;
+        const WIN_COUNT = 5;
+
+        let board = [];
+        let currentPlayer = 'black';
+        let gameOver = false;
+
+        function initializeBoard() {
+            board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
+            currentPlayer = 'black';
+            gameOver = false;
+            renderBoard();
+            updateTurnIndicator();
+            hideWinnerMessage();
+        }
+
+        function renderBoard() {
+            const boardElement = document.getElementById('board');
+            boardElement.innerHTML = '';
+
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+
+                    if (board[row][col]) {
+                        cell.classList.add('occupied');
+                        const piece = document.createElement('div');
+                        piece.className = `piece ${board[row][col]}`;
+                        cell.appendChild(piece);
+                    }
+
+                    cell.addEventListener('click', () => handleCellClick(row, col));
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(row, col) {
+            if (gameOver || board[row][col]) {
+                return;
+            }
+
+            board[row][col] = currentPlayer;
+            renderBoard();
+
+            if (checkWin(row, col)) {
+                gameOver = true;
+                highlightWinningPieces(row, col);
+                showWinnerMessage(currentPlayer);
+                return;
+            }
+
+            if (checkDraw()) {
+                gameOver = true;
+                showWinnerMessage('draw');
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            updateTurnIndicator();
+        }
+
+        function checkWin(row, col) {
+            const directions = [
+                [[0, 1], [0, -1]],   // horizontal
+                [[1, 0], [-1, 0]],   // vertical
+                [[1, 1], [-1, -1]], // diagonal
+                [[1, -1], [-1, 1]]  // anti-diagonal
+            ];
+
+            for (let [dir1, dir2] of directions) {
+                let count = 1;
+
+                count += countDirection(row, col, dir1[0], dir1[1]);
+                count += countDirection(row, col, dir2[0], dir2[1]);
+
+                if (count >= WIN_COUNT) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function countDirection(row, col, deltaRow, deltaCol) {
+            let count = 0;
+            let currentRow = row + deltaRow;
+            let currentCol = col + deltaCol;
+
+            while (
+                currentRow >= 0 && currentRow < BOARD_SIZE &&
+                currentCol >= 0 && currentCol < BOARD_SIZE &&
+                board[currentRow][currentCol] === currentPlayer
+            ) {
+                count++;
+                currentRow += deltaRow;
+                currentCol += deltaCol;
+            }
+
+            return count;
+        }
+
+        function highlightWinningPieces(row, col) {
+            const directions = [
+                [[0, 1], [0, -1]],   // horizontal
+                [[1, 0], [-1, 0]],   // vertical
+                [[1, 1], [-1, -1]], // diagonal
+                [[1, -1], [-1, 1]]  // anti-diagonal
+            ];
+
+            for (let [dir1, dir2] of directions) {
+                const pieces = [[row, col]];
+
+                pieces.push(...getPiecesInDirection(row, col, dir1[0], dir1[1]));
+                pieces.push(...getPiecesInDirection(row, col, dir2[0], dir2[1]));
+
+                if (pieces.length >= WIN_COUNT) {
+                    pieces.slice(0, WIN_COUNT).forEach(([r, c]) => {
+                        const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                        const piece = cell.querySelector('.piece');
+                        if (piece) {
+                            piece.classList.add('winning');
+                        }
+                    });
+                    return;
+                }
+            }
+        }
+
+        function getPiecesInDirection(row, col, deltaRow, deltaCol) {
+            const pieces = [];
+            let currentRow = row + deltaRow;
+            let currentCol = col + deltaCol;
+
+            while (
+                currentRow >= 0 && currentRow < BOARD_SIZE &&
+                currentCol >= 0 && currentCol < BOARD_SIZE &&
+                board[currentRow][currentCol] === currentPlayer
+            ) {
+                pieces.push([currentRow, currentCol]);
+                currentRow += deltaRow;
+                currentCol += deltaCol;
+            }
+
+            return pieces;
+        }
+
+        function checkDraw() {
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    if (!board[row][col]) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function updateTurnIndicator() {
+            const turnIndicator = document.getElementById('currentTurn');
+            turnIndicator.textContent = `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}'s Turn`;
+        }
+
+        function showWinnerMessage(winner) {
+            const winnerMessage = document.getElementById('winnerMessage');
+
+            if (winner === 'draw') {
+                winnerMessage.textContent = "🤝 It's a Draw!";
+                winnerMessage.style.background = '#6c757d';
+            } else {
+                const winnerName = winner.charAt(0).toUpperCase() + winner.slice(1);
+                winnerMessage.textContent = `🎉 ${winnerName} Wins!`;
+                winnerMessage.style.background = winner === 'black' ? '#333' : '#999';
+            }
+
+            winnerMessage.classList.add('show');
+        }
+
+        function hideWinnerMessage() {
+            const winnerMessage = document.getElementById('winnerMessage');
+            winnerMessage.classList.remove('show');
+        }
+
+        function resetGame() {
+            initializeBoard();
+        }
+
+        // Initialize the game when the page loads
+        initializeBoard();
+    </script>
+</body>
+</html>

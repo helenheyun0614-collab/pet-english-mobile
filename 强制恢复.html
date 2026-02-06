@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强制恢复数据</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            font-family: monospace;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .status.success {
+            border-left-color: #27ae60;
+            background: #d4edda;
+        }
+
+        .status.error {
+            border-left-color: #e74c3c;
+            background: #f8d7da;
+        }
+
+        .status.warning {
+            border-left-color: #f39c12;
+            background: #fff3cd;
+        }
+
+        button {
+            padding: 15px 30px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .steps {
+            background: #e7f3ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .step-number {
+            font-weight: bold;
+            color: #3498db;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔧 PET英语屋强制恢复工具</h1>
+
+        <div class="steps">
+            <h3>使用步骤：</h3>
+            <div class="step"><span class="step-number">步骤1：</span> 点击"检查内置数据"按钮</div>
+            <div class="step"><span class="step-number">步骤2：</span> 确认数据存在后，点击"强制恢复数据"</div>
+            <div class="step"><span class="step-number">步骤3：</span> 恢复成功后，点击"打开应用"</div>
+        </div>
+
+        <div id="status" class="status">准备就绪，请点击下方按钮开始恢复...</div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn-primary" onclick="checkBuiltInData()">1️⃣ 检查内置数据</button>
+            <button class="btn-success" onclick="forceRestoreData()">2️⃣ 强制恢复数据</button>
+            <button class="btn-primary" onclick="openApp()">3️⃣ 打开应用</button>
+        </div>
+    </div>
+
+    <script src="src/pet-content.js"></script>
+    <script>
+        function updateStatus(text, type = '') {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.className = 'status ' + type;
+        }
+
+        function checkBuiltInData() {
+            updateStatus('正在检查内置数据...', 'warning');
+
+            setTimeout(() => {
+                if (!window.petContent) {
+                    updateStatus('❌ 内置数据加载失败\n\n无法找到 window.petContent 对象。\n请确保 src/pet-content.js 文件存在且正确加载。\n\n请检查浏览器控制台是否有错误信息。', 'error');
+                    return;
+                }
+
+                const stats = {
+                    '单词': window.petContent.vocab?.length || 0,
+                    '阅读': window.petContent.readingSets?.length || 0,
+                    '固定搭配': window.petContent.collocationSets?.length || 0,
+                    '完形填空': window.petContent.clozeSets?.length || 0
+                };
+
+                const total = stats['单词'] + stats['阅读'] + stats['固定搭配'] + stats['完形填空'];
+
+                if (total === 0) {
+                    updateStatus('❌ 内置数据为空\n\n所有数据项都是空的。\n请检查 src/pet-content.js 文件内容。', 'error');
+                } else {
+                    updateStatus(`✅ 内置数据检查成功！\n\n数据统计:\n${JSON.stringify(stats, null, 2)}\n\n总计: ${total} 条数据\n\n现在可以点击"强制恢复数据"按钮。`, 'success');
+                }
+            }, 500);
+        }
+
+        function forceRestoreData() {
+            updateStatus('正在强制恢复数据...', 'warning');
+
+            setTimeout(() => {
+                if (!window.petContent) {
+                    updateStatus('❌ 内置数据未加载\n\n请先点击"检查内置数据"按钮。', 'error');
+                    return;
+                }
+
+                const builtInData = {
+                    vocab: window.petContent.vocab || [],
+                    readingSets: window.petContent.readingSets || [],
+                    collocationSets: window.petContent.collocationSets || [],
+                    clozeSets: window.petContent.clozeSets || []
+                };
+
+                const stats = {
+                    '单词': builtInData.vocab.length,
+                    '阅读': builtInData.readingSets.length,
+                    '固定搭配': builtInData.collocationSets.length,
+                    '完形填空': builtInData.clozeSets.length
+                };
+
+                // 清除所有旧数据
+                const allKeys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('pet') || key.startsWith('Pet'))) {
+                        allKeys.push(key);
+                    }
+                }
+
+                allKeys.forEach(key => {
+                    localStorage.removeItem(key);
+                });
+
+                // 保存到多个位置
+                const saveKeys = ['petEnglishData', 'petEnglishData_backup', 'petEnglishData_old', 'petData'];
+                let successCount = 0;
+
+                for (const key of saveKeys) {
+                    try {
+                        localStorage.setItem(key, JSON.stringify(builtInData));
+                        successCount++;
+                    } catch (e) {
+                        console.warn(`保存到 ${key} 失败:`, e);
+                    }
+                }
+
+                if (successCount > 0) {
+                    // 验证保存
+                    const verify = localStorage.getItem('petEnglishData');
+                    if (verify) {
+                        const verifyData = JSON.parse(verify);
+                        const verifyStats = {
+                            '单词': verifyData.vocab?.length || 0,
+                            '阅读': verifyData.readingSets?.length || 0,
+                            '固定搭配': verifyData.collocationSets?.length || 0,
+                            '完形填空': verifyData.clozeSets?.length || 0
+                        };
+
+                        updateStatus(`✅ 数据恢复成功！\n\n恢复统计:\n${JSON.stringify(stats, null, 2)}\n\n验证统计:\n${JSON.stringify(verifyStats, null, 2)}\n\n数据大小: ${(JSON.stringify(builtInData).length / 1024).toFixed(2)} KB\n\n已保存到 ${successCount} 个备份位置\n\n现在可以点击"打开应用"按钮查看数据。`, 'success');
+                    } else {
+                        updateStatus('❌ 数据验证失败\n\n数据保存后无法读取。\n请检查浏览器是否支持 localStorage。', 'error');
+                    }
+                } else {
+                    updateStatus('❌ 数据恢复失败\n\n无法保存数据到 localStorage。\n请检查浏览器是否支持 localStorage。', 'error');
+                }
+            }, 500);
+        }
+
+        function openApp() {
+            // 验证数据是否存在
+            const saved = localStorage.getItem('petEnglishData');
+            if (!saved) {
+                updateStatus('⚠️ 未检测到恢复的数据\n\n请先点击"强制恢复数据"按钮。', 'warning');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(saved);
+                const stats = {
+                    '单词': data.vocab?.length || 0,
+                    '阅读': data.readingSets?.length || 0,
+                    '固定搭配': data.collocationSets?.length || 0,
+                    '完形填空': data.clozeSets?.length || 0
+                };
+
+                const total = stats['单词'] + stats['阅读'] + stats['固定搭配'] + stats['完形填空'];
+                if (total === 0) {
+                    updateStatus('⚠️ 恢复的数据为空\n\n请重新执行恢复操作。', 'warning');
+                    return;
+                }
+
+                // 数据验证通过，打开应用
+                window.location.href = 'src/index.html';
+            } catch (e) {
+                updateStatus('❌ 数据验证失败\n\n已保存的数据无法解析。\n请重新执行恢复操作。', 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>

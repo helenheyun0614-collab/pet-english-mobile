@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一键修复 PET应用</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 600px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 { color: #2c3e50; margin-bottom: 20px; text-align: center; }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            background: #3498db;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover { background: #2980b9; }
+        button.success { background: #27ae60; }
+        button.success:hover { background: #229954; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PET应用一键修复</h1>
+
+        <div id="status" class="status info">正在检查系统状态...</div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-value" id="vocabCount">-</div>
+                <div class="stat-label">单词</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="readingCount">-</div>
+                <div class="stat-label">阅读</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="collocationCount">-</div>
+                <div class="stat-label">搭配</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="clozeCount">-</div>
+                <div class="stat-label">完形</div>
+            </div>
+        </div>
+
+        <button class="success" onclick="fixAndRestore()">🚀 一键修复并恢复数据</button>
+        <button onclick="openApp()">📖 打开应用</button>
+    </div>
+
+    <script src="src/pet-content.js"></script>
+    <script>
+        function updateStatus(text, type) {
+            const el = document.getElementById('status');
+            el.textContent = text;
+            el.className = 'status ' + type;
+        }
+
+        function updateStats(data) {
+            document.getElementById('vocabCount').textContent = data.vocab?.length || 0;
+            document.getElementById('readingCount').textContent = data.readingSets?.length || 0;
+            document.getElementById('collocationCount').textContent = data.collocationSets?.length || 0;
+            document.getElementById('clozeCount').textContent = data.clozeSets?.length || 0;
+        }
+
+        function fixAndRestore() {
+            updateStatus('正在修复...', 'info');
+
+            setTimeout(() => {
+                if (!window.petContent) {
+                    updateStatus('❌ 内置数据加载失败！请检查 src/pet-content.js 文件', 'error');
+                    return;
+                }
+
+                const data = {
+                    vocab: window.petContent.vocab || [],
+                    readingSets: window.petContent.readingSets || [],
+                    collocationSets: window.petContent.collocationSets || [],
+                    clozeSets: window.petContent.clozeSets || []
+                };
+
+                const total = (data.vocab?.length || 0) +
+                             (data.readingSets?.length || 0) +
+                             (data.collocationSets?.length || 0) +
+                             (data.clozeSets?.length || 0);
+
+                if (total === 0) {
+                    updateStatus('❌ 内置数据为空！', 'error');
+                    return;
+                }
+
+                // 保存到 localStorage
+                try {
+                    localStorage.setItem('petEnglishData', JSON.stringify(data));
+                    localStorage.setItem('petEnglishData_backup', JSON.stringify(data));
+                    localStorage.setItem('petEnglishData_old', JSON.stringify(data));
+
+                    updateStats(data);
+                    updateStatus(`✅ 修复成功！已恢复 ${total} 条数据，现在可以打开应用了`, 'success');
+                } catch (e) {
+                    updateStatus('❌ 保存失败: ' + e.message, 'error');
+                }
+            }, 500);
+        }
+
+        function openApp() {
+            window.location.href = 'src/index.html';
+        }
+
+        // 自动检查
+        window.onload = () => {
+            setTimeout(() => {
+                if (window.petContent) {
+                    const stats = {
+                        vocab: window.petContent.vocab?.length || 0,
+                        readingSets: window.petContent.readingSets?.length || 0,
+                        collocationSets: window.petContent.collocationSets?.length || 0,
+                        clozeSets: window.petContent.clozeSets?.length || 0
+                    };
+                    updateStats(stats);
+                    updateStatus('✅ 内置数据已加载，点击"一键修复"按钮', 'info');
+                } else {
+                    updateStatus('❌ 内置数据未加载，请刷新页面重试', 'error');
+                }
+            }, 500);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PET应用诊断与修复</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        h1 { color: #2c3e50; margin-bottom: 20px; }
+        h2 { color: #34495e; margin: 20px 0 10px; font-size: 18px; }
+        .status {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+        .warning { background: #fff3cd; color: #856404; border-left: 4px solid #ffc107; }
+        .info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #2980b9; }
+        button.danger { background: #e74c3c; }
+        button.danger:hover { background: #c0392b; }
+        button.success { background: #27ae60; }
+        button.success:hover { background: #229954; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 PET应用诊断与修复工具</h1>
+
+        <div id="checkResult" class="status info">正在检查...</div>
+
+        <h2>📊 数据统计</h2>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="vocabCount">-</div>
+                <div class="stat-label">单词</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="readingCount">-</div>
+                <div class="stat-label">阅读</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="collocationCount">-</div>
+                <div class="stat-label">固定搭配</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="clozeCount">-</div>
+                <div class="stat-label">完形填空</div>
+            </div>
+        </div>
+
+        <h2>🔧 快速修复</h2>
+        <button class="success" onclick="restoreAllData()">🔄 恢复所有数据</button>
+        <button onclick="clearAllData()">🗑️ 清除所有数据</button>
+        <button onclick="refreshCheck()">🔍 重新检查</button>
+        <button onclick="openApp()">🚀 打开应用</button>
+
+        <h2>📋 详细日志</h2>
+        <pre id="log">正在检查...</pre>
+    </div>
+
+    <script src="src/pet-content.js"></script>
+    <script>
+        const logs = [];
+
+        function log(msg) {
+            logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+            document.getElementById('log').textContent = logs.join('\n');
+            console.log(msg);
+        }
+
+        function updateStatus(type, msg) {
+            const el = document.getElementById('checkResult');
+            el.className = 'status ' + type;
+            el.textContent = msg;
+        }
+
+        function updateStats(data) {
+            document.getElementById('vocabCount').textContent = data.vocab || 0;
+            document.getElementById('readingCount').textContent = data.readingSets || 0;
+            document.getElementById('collocationCount').textContent = data.collocationSets || 0;
+            document.getElementById('clozeCount').textContent = data.clozeSets || 0;
+        }
+
+        function checkBuiltinData() {
+            log('📦 检查内置数据...');
+            if (!window.petContent) {
+                log('❌ window.petContent 不存在！');
+                return false;
+            }
+
+            const stats = {
+                vocab: window.petContent.vocab?.length || 0,
+                readingSets: window.petContent.readingSets?.length || 0,
+                collocationSets: window.petContent.collocationSets?.length || 0,
+                clozeSets: window.petContent.clozeSets?.length || 0
+            };
+
+            log(`✅ 内置数据: 单词=${stats.vocab}, 阅读=${stats.readingSets}, 搭配=${stats.collocationSets}, 完形=${stats.clozeSets}`);
+            updateStats(stats);
+            return stats;
+        }
+
+        function checkLocalStorage() {
+            log('💾 检查 LocalStorage...');
+            const keys = ['petEnglishData', 'petEnglishData_backup', 'petEnglishData_old', 'petData'];
+            let found = null;
+
+            for (const key of keys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        const stats = {
+                            vocab: parsed.vocab?.length || 0,
+                            readingSets: parsed.readingSets?.length || 0,
+                            collocationSets: parsed.collocationSets?.length || 0,
+                            clozeSets: parsed.clozeSets?.length || 0
+                        };
+                        log(`✅ 找到 ${key}: 单词=${stats.vocab}, 阅读=${stats.readingSets}, 搭配=${stats.collocationSets}, 完形=${stats.clozeSets}`);
+                        if (!found) found = { key, stats };
+                    } catch (e) {
+                        log(`⚠️ ${key} 数据损坏`);
+                    }
+                }
+            }
+
+            if (!found) {
+                log('⚠️ LocalStorage 中没有数据');
+            }
+            return found;
+        }
+
+        function restoreAllData() {
+            log('🔄 开始恢复数据...');
+
+            if (!window.petContent) {
+                log('❌ 内置数据未加载，无法恢复！');
+                updateStatus('error', '❌ 内置数据未加载');
+                return;
+            }
+
+            const builtInData = {
+                vocab: window.petContent.vocab || [],
+                readingSets: window.petContent.readingSets || [],
+                collocationSets: window.petContent.collocationSets || [],
+                clozeSets: window.petContent.clozeSets || []
+            };
+
+            const stats = {
+                vocab: builtInData.vocab.length,
+                readingSets: builtInData.readingSets.length,
+                collocationSets: builtInData.collocationSets.length,
+                clozeSets: builtInData.clozeSets.length
+            };
+
+            // 保存到多个位置
+            const saveKeys = ['petEnglishData', 'petEnglishData_backup', 'petEnglishData_old', 'petData'];
+            for (const key of saveKeys) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(builtInData));
+                    log(`✅ 已保存到 ${key}`);
+                } catch (e) {
+                    log(`❌ 保存到 ${key} 失败: ${e.message}`);
+                }
+            }
+
+            updateStats(stats);
+            updateStatus('success', `✅ 数据恢复成功！共 ${stats.vocab + stats.readingSets + stats.collocationSets + stats.clozeSets} 条数据`);
+            log('✅ 数据恢复完成！');
+        }
+
+        function clearAllData() {
+            if (!confirm('确定要清除所有数据吗？此操作不可恢复！')) return;
+
+            log('🗑️ 清除所有数据...');
+            const keys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith('pet') || key.startsWith('Pet'))) {
+                    keys.push(key);
+                }
+            }
+
+            keys.forEach(key => {
+                localStorage.removeItem(key);
+                log(`🗑️ 已删除 ${key}`);
+            });
+
+            updateStats({ vocab: 0, readingSets: 0, collocationSets: 0, clozeSets: 0 });
+            updateStatus('warning', `⚠️ 已清除 ${keys.length} 个数据项`);
+            log('✅ 数据清除完成！');
+        }
+
+        function refreshCheck() {
+            logs.length = 0;
+            log('🔍 开始检查...\n');
+
+            const builtinStats = checkBuiltinData();
+            const localData = checkLocalStorage();
+
+            if (localData) {
+                updateStatus('success', '✅ 数据完整，可以直接使用');
+                updateStats(localData.stats);
+            } else if (builtinStats && (builtinStats.vocab + builtinStats.readingSets + builtinStats.collocationSets + builtinStats.clozeSets) > 0) {
+                updateStatus('warning', '⚠️ LocalStorage 无数据，请点击"恢复所有数据"');
+            } else {
+                updateStatus('error', '❌ 没有可用数据！');
+            }
+        }
+
+        function openApp() {
+            window.location.href = 'src/index.html';
+        }
+
+        // 页面加载后自动检查
+        window.onload = () => {
+            setTimeout(refreshCheck, 500);
+        };
+    </script>
+</body>
+</html>

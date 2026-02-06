@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PET应用快速测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 12px 24px;
+            margin: 5px;
+            border: none;
+            border-radius: 6px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 PET英语屋快速测试</h1>
+
+    <div class="card">
+        <h2>📁 文件检查</h2>
+        <div id="fileCheck" class="status info">正在检查...</div>
+    </div>
+
+    <div class="card">
+        <h2>📦 内置数据检查</h2>
+        <div id="builtinData" class="status info">正在检查...</div>
+    </div>
+
+    <div class="card">
+        <h2>💾 LocalStorage 数据检查</h2>
+        <div id="localStorageData" class="status info">正在检查...</div>
+    </div>
+
+    <div class="card">
+        <h2>🧪 JavaScript 语法检查</h2>
+        <div id="jsCheck" class="status info">正在检查...</div>
+    </div>
+
+    <div class="card">
+        <h2>⚡ 快速操作</h2>
+        <button onclick="restoreData()">🔄 恢复数据</button>
+        <button onclick="openApp()">🚀 打开应用</button>
+        <button onclick="checkAll()">🔍 重新检查</button>
+    </div>
+
+    <div class="card">
+        <h2>📊 详细日志</h2>
+        <pre id="log">等待检查...</pre>
+    </div>
+
+    <script src="src/pet-content.js"></script>
+    <script>
+        let logMessages = [];
+
+        function log(msg) {
+            logMessages.push(msg);
+            document.getElementById('log').textContent = logMessages.join('\n');
+            console.log(msg);
+        }
+
+        function updateStatus(id, text, type) {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.className = 'status ' + type;
+        }
+
+        async function checkFiles() {
+            log('📁 开始检查文件...');
+            const files = [
+                'src/index.html',
+                'src/pet-content.js'
+            ];
+
+            try {
+                const response = await fetch('src/index.html', { method: 'HEAD' });
+                if (response.ok) {
+                    updateStatus('fileCheck', '✅ src/index.html 存在', 'success');
+                    log('✅ src/index.html 可以访问');
+                } else {
+                    updateStatus('fileCheck', '❌ src/index.html 不存在', 'error');
+                    log('❌ src/index.html 无法访问');
+                }
+
+                const response2 = await fetch('src/pet-content.js', { method: 'HEAD' });
+                if (response2.ok) {
+                    log('✅ src/pet-content.js 可以访问');
+                } else {
+                    log('❌ src/pet-content.js 无法访问');
+                }
+            } catch (e) {
+                updateStatus('fileCheck', '⚠️ 无法检查文件: ' + e.message, 'warning');
+                log('⚠️ 文件检查失败: ' + e.message);
+            }
+        }
+
+        function checkBuiltinData() {
+            log('📦 检查内置数据...');
+            if (window.petContent) {
+                const stats = {
+                    单词: window.petContent.vocab?.length || 0,
+                    阅读: window.petContent.readingSets?.length || 0,
+                    固定搭配: window.petContent.collocationSets?.length || 0,
+                    完形: window.petContent.clozeSets?.length || 0
+                };
+                const total = stats.单词 + stats.阅读 + stats.固定搭配 + stats.完形;
+                updateStatus('builtinData', `✅ 内置数据存在 (共 ${total} 条): ${JSON.stringify(stats)}`, 'success');
+                log('✅ 内置数据: ' + JSON.stringify(stats));
+            } else {
+                updateStatus('builtinData', '❌ 内置数据未加载 (window.petContent 不存在)', 'error');
+                log('❌ window.petContent 未定义');
+            }
+        }
+
+        function checkLocalStorage() {
+            log('💾 检查 LocalStorage...');
+            const keys = ['petEnglishData', 'petEnglishData_backup', 'petEnglishData_old', 'petData'];
+            let found = false;
+            let totalItems = 0;
+
+            for (const key of keys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        const count = (parsed.vocab?.length || 0) +
+                                     (parsed.readingSets?.length || 0) +
+                                     (parsed.collocationSets?.length || 0) +
+                                     (parsed.clozeSets?.length || 0);
+                        log(`✅ 找到 ${key}: ${count} 条数据`);
+                        totalItems += count;
+                        found = true;
+                    } catch (e) {
+                        log(`⚠️ ${key} 数据损坏`);
+                    }
+                }
+            }
+
+            if (found) {
+                updateStatus('localStorageData', `✅ LocalStorage 中有数据 (共 ${totalItems} 条)`, 'success');
+            } else {
+                updateStatus('localStorageData', '⚠️ LocalStorage 中没有数据', 'warning');
+                log('⚠️ LocalStorage 为空');
+            }
+        }
+
+        async function checkJavaScript() {
+            log('🧪 检查 JavaScript 语法...');
+            try {
+                const response = await fetch('src/index.html');
+                const html = await response.text();
+
+                // 检查关键函数是否存在
+                const scriptContent = html.match(/<script>([\s\S]*)<\/script>/);
+                if (scriptContent) {
+                    const requiredFunctions = [
+                        'loadWord',
+                        'loadReading',
+                        'loadCollocation',
+                        'loadCloze',
+                        'showDictModal',
+                        'closeDictModal'
+                    ];
+
+                    let missing = [];
+                    for (const fn of requiredFunctions) {
+                        if (!scriptContent[1].includes('function ' + fn) &&
+                            !scriptContent[1].includes(fn + ' =') &&
+                            !scriptContent[1].includes(fn + ':')) {
+                            missing.push(fn);
+                        }
+                    }
+
+                    if (missing.length === 0) {
+                        updateStatus('jsCheck', '✅ 所有关键函数都存在', 'success');
+                        log('✅ JavaScript 检查通过');
+                    } else {
+                        updateStatus('jsCheck', `⚠️ 缺少函数: ${missing.join(', ')}`, 'warning');
+                        log('⚠️ 缺少函数: ' + missing.join(', '));
+                    }
+
+                    // 检查文件完整性
+                    if (html.endsWith('</html>')) {
+                        log('✅ HTML 文件完整闭合');
+                    } else {
+                        log('❌ HTML 文件未正确闭合');
+                    }
+                }
+            } catch (e) {
+                updateStatus('jsCheck', '❌ 检查失败: ' + e.message, 'error');
+                log('❌ 检查失败: ' + e.message);
+            }
+        }
+
+        function restoreData() {
+            if (!window.petContent) {
+                alert('❌ 内置数据未加载，无法恢复');
+                return;
+            }
+
+            const builtInData = {
+                vocab: window.petContent.vocab || [],
+                readingSets: window.petContent.readingSets || [],
+                collocationSets: window.petContent.collocationSets || [],
+                clozeSets: window.petContent.clozeSets || []
+            };
+
+            localStorage.setItem('petEnglishData', JSON.stringify(builtInData));
+            localStorage.setItem('petEnglishData_backup', JSON.stringify(builtInData));
+
+            alert('✅ 数据已恢复！共 ' +
+                (builtInData.vocab.length + builtInData.readingSets.length +
+                 builtInData.collocationSets.length + builtInData.clozeSets.length) +
+                ' 条数据');
+
+            checkAll();
+        }
+
+        function openApp() {
+            window.location.href = 'src/index.html';
+        }
+
+        async function checkAll() {
+            logMessages = [];
+            log('🔍 开始全面检查...\n');
+            await checkFiles();
+            checkBuiltinData();
+            checkLocalStorage();
+            await checkJavaScript();
+            log('\n✅ 检查完成！');
+        }
+
+        // 页面加载后自动检查
+        window.onload = () => {
+            setTimeout(checkAll, 500);
+        };
+    </script>
+</body>
+</html>

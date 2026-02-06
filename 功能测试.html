@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>功能测试</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background: #f5f5f5; }
+        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #333; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; background: #007bff; color: white; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+        .pass { color: green; }
+        .fail { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🧪 PET应用功能测试</h1>
+
+    <div class="card">
+        <h2>1️⃣ 点击事件测试</h2>
+        <button id="testBtn">点击测试</button>
+        <div id="clickResult" class="result">等待点击...</div>
+    </div>
+
+    <div class="card">
+        <h2>2️⃣ LocalStorage 测试</h2>
+        <button onclick="testLocalStorage()">测试 LocalStorage</button>
+        <div id="storageResult" class="result">等待测试...</div>
+    </div>
+
+    <div class="card">
+        <h2>3️⃣ 数据加载测试</h2>
+        <button onclick="testDataLoad()">测试数据加载</button>
+        <div id="dataResult" class="result">等待测试...</div>
+    </div>
+
+    <div class="card">
+        <h2>4️⃣ DOM操作测试</h2>
+        <button onclick="testDOM()">测试DOM操作</button>
+        <div id="domResult" class="result">等待测试...</div>
+    </div>
+
+    <div class="card">
+        <h2>🚀 快速操作</h2>
+        <button onclick="location.href='src/index.html'">打开主应用</button>
+        <button onclick="location.href='诊断并修复.html'">打开诊断工具</button>
+    </div>
+
+    <script>
+        // 测试1: 点击事件
+        const testBtn = document.getElementById('testBtn');
+        testBtn.addEventListener('click', () => {
+            document.getElementById('clickResult').innerHTML = '<span class="pass">✅ 点击事件正常工作！</span>';
+        });
+
+        // 测试2: LocalStorage
+        function testLocalStorage() {
+            try {
+                localStorage.setItem('test', 'hello');
+                const value = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                if (value === 'hello') {
+                    document.getElementById('storageResult').innerHTML = '<span class="pass">✅ LocalStorage 正常工作！</span>';
+                } else {
+                    document.getElementById('storageResult').innerHTML = '<span class="fail">❌ LocalStorage 读写不一致</span>';
+                }
+            } catch (e) {
+                document.getElementById('storageResult').innerHTML = '<span class="fail">❌ LocalStorage 不可用: ' + e.message + '</span>';
+            }
+        }
+
+        // 测试3: 数据加载
+        function testDataLoad() {
+            const result = document.getElementById('dataResult');
+            result.innerHTML = '检查中...';
+
+            // 检查localStorage中的数据
+            const keys = ['petEnglishData', 'petEnglishData_backup', 'petEnglishData_old', 'petData'];
+            let found = false;
+            for (const key of keys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        const count = (parsed.vocab?.length || 0) + (parsed.readingSets?.length || 0);
+                        result.innerHTML = `<span class="pass">✅ 找到数据: ${key} (${count} 条)</span>`;
+                        found = true;
+                        break;
+                    } catch (e) {}
+                }
+            }
+            if (!found) {
+                result.innerHTML = '<span class="fail">❌ LocalStorage 中没有数据</span>';
+            }
+        }
+
+        // 测试4: DOM操作
+        function testDOM() {
+            const result = document.getElementById('domResult');
+            try {
+                const div = document.createElement('div');
+                div.textContent = '测试';
+                document.body.appendChild(div);
+                document.body.removeChild(div);
+                result.innerHTML = '<span class="pass">✅ DOM 操作正常！</span>';
+            } catch (e) {
+                result.innerHTML = '<span class="fail">❌ DOM 操作失败: ' + e.message + '</span>';
+            }
+        }
+    </script>
+</body>
+</html>

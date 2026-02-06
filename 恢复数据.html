@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据恢复工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Helvetica, Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .section.warning {
+            border-left-color: #f39c12;
+            background: #fef9e7;
+        }
+
+        .section.success {
+            border-left-color: #27ae60;
+            background: #e8f8f5;
+        }
+
+        .section.error {
+            border-left-color: #e74c3c;
+            background: #fdedec;
+        }
+
+        button {
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 32px;
+        }
+
+        .stat-card p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .progress {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔧 PET英语屋数据恢复工具</h1>
+
+        <div class="section warning">
+            <h3>⚠️ 使用说明</h3>
+            <p>此工具将帮助您恢复PET英语屋的内置数据。如果您发现应用中的数据丢失，可以使用此工具恢复。</p>
+            <p><strong>注意：此操作将覆盖当前的localStorage数据！</strong></p>
+        </div>
+
+        <div class="section">
+            <h3>📊 当前数据状态</h3>
+            <button class="btn-primary" onclick="checkCurrentData()">检查当前数据</button>
+            <div id="currentDataResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h3>🔄 恢复内置数据</h3>
+            <button class="btn-success" onclick="restoreBuiltInData()">恢复内置数据</button>
+            <div id="restoreResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h3>🗑️ 清除所有数据</h3>
+            <button class="btn-danger" onclick="clearAllData()">清除所有数据</button>
+            <div id="clearResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section success">
+            <h3>✅ 验证恢复</h3>
+            <button class="btn-primary" onclick="verifyData()">验证数据</button>
+            <div id="verifyResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="src/pet-content.js"></script>
+    <script>
+        // 检查当前数据
+        function checkCurrentData() {
+            const result = document.getElementById('currentDataResult');
+            result.style.display = 'block';
+
+            try {
+                const petData = localStorage.getItem('petEnglishData');
+                const checkinData = localStorage.getItem('petCheckinRecords');
+
+                if (petData) {
+                    const parsed = JSON.parse(petData);
+                    const stats = {
+                        '单词数量': parsed.vocab?.length || 0,
+                        '阅读题数量': parsed.readingSets?.length || 0,
+                        '固定搭配数量': parsed.collocationSets?.length || 0,
+                        '完形题数量': parsed.clozeSets?.length || 0
+                    };
+
+                    result.innerHTML = `<strong>✅ 找到PET应用数据</strong>\n\n题库统计：\n${JSON.stringify(stats, null, 2)}\n\n数据大小：${petData.length} 字节\n约 ${(petData.length / 1024).toFixed(2)} KB`;
+                } else {
+                    result.innerHTML = `<strong>⚠️ 没有找到PET应用数据</strong>\n\nlocalStorage中没有petEnglishData键。`;
+                }
+
+                if (checkinData) {
+                    const checkin = JSON.parse(checkinData);
+                    result.innerHTML += `\n\n打卡记录：${checkin.length} 条`;
+                }
+            } catch (e) {
+                result.innerHTML = `<strong>❌ 检查失败</strong>\n\n错误信息: ${e.message}`;
+            }
+        }
+
+        // 恢复内置数据
+        function restoreBuiltInData() {
+            const result = document.getElementById('restoreResult');
+            result.style.display = 'block';
+
+            try {
+                // 等待内置数据加载
+                setTimeout(() => {
+                    if (!window.petContent) {
+                        result.innerHTML = `<strong>❌ 内置数据加载失败</strong>\n\n无法找到window.petContent对象。请确保src/pet-content.js文件存在且正确加载。`;
+                        return;
+                    }
+
+                    const builtInData = {
+                        vocab: window.petContent.vocab || [],
+                        readingSets: window.petContent.readingSets || [],
+                        collocationSets: window.petContent.collocationSets || [],
+                        clozeSets: window.petContent.clozeSets || []
+                    };
+
+                    const stats = {
+                        '单词': builtInData.vocab.length,
+                        '阅读': builtInData.readingSets.length,
+                        '固定搭配': builtInData.collocationSets.length,
+                        '完形': builtInData.clozeSets.length
+                    };
+
+                    // 保存到localStorage
+                    localStorage.setItem('petEnglishData', JSON.stringify(builtInData));
+
+                    result.innerHTML = `<strong>✅ 内置数据恢复成功！</strong>\n\n恢复的数据统计：\n${JSON.stringify(stats, null, 2)}\n\n数据大小：${JSON.stringify(builtInData).length} 字节\n约 ${(JSON.stringify(builtInData).length / 1024).toFixed(2)} KB\n\n现在可以打开 src/index.html 查看恢复后的数据。`;
+                }, 500);
+            } catch (e) {
+                result.innerHTML = `<strong>❌ 恢复失败</strong>\n\n错误信息: ${e.message}`;
+            }
+        }
+
+        // 清除所有数据
+        function clearAllData() {
+            const result = document.getElementById('clearResult');
+            result.style.display = 'block';
+
+            if (confirm('确定要清除所有localStorage数据吗？此操作不可恢复！')) {
+                try {
+                    const keys = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        keys.push(localStorage.key(i));
+                    }
+
+                    localStorage.clear();
+
+                    result.innerHTML = `<strong>✅ 所有数据已清除</strong>\n\n清除的键：\n${keys.join('\n')}\n\n共 ${keys.length} 个键`;
+                } catch (e) {
+                    result.innerHTML = `<strong>❌ 清除失败</strong>\n\n错误信息: ${e.message}`;
+                }
+            } else {
+                result.innerHTML = `<strong>❌ 已取消清除操作</strong>`;
+            }
+        }
+
+        // 验证数据
+        function verifyData() {
+            const result = document.getElementById('verifyResult');
+            result.style.display = 'block';
+
+            try {
+                const petData = localStorage.getItem('petEnglishData');
+
+                if (!petData) {
+                    result.innerHTML = `<strong>⚠️ 验证失败</strong>\n\nlocalStorage中没有petEnglishData数据。`;
+                    return;
+                }
+
+                const parsed = JSON.parse(petData);
+
+                // 验证数据结构
+                const checks = {
+                    'vocab存在': Array.isArray(parsed.vocab) && parsed.vocab.length > 0,
+                    'readingSets存在': Array.isArray(parsed.readingSets) && parsed.readingSets.length > 0,
+                    'collocationSets存在': Array.isArray(parsed.collocationSets) && parsed.collocationSets.length > 0,
+                    'clozeSets存在': Array.isArray(parsed.clozeSets) && parsed.clozeSets.length > 0
+                };
+
+                const allPassed = Object.values(checks).every(v => v);
+
+                let html = `<strong>${allPassed ? '✅' : '⚠️'} 数据验证结果</strong>\n\n`;
+                html += `验证项目：\n${JSON.stringify(checks, null, 2)}\n\n`;
+
+                if (allPassed) {
+                    html += `数据统计：\n`;
+                    html += `- 单词：${parsed.vocab.length} 个\n`;
+                    html += `- 阅读：${parsed.readingSets.length} 题\n`;
+                    html += `- 固定搭配：${parsed.collocationSets.length} 题\n`;
+                    html += `- 完形：${parsed.clozeSets.length} 题\n\n`;
+                    html += `✅ 数据结构完整，可以正常使用！`;
+                } else {
+                    html += `⚠️ 数据不完整，请重新恢复。`;
+                }
+
+                result.innerHTML = html;
+            } catch (e) {
+                result.innerHTML = `<strong>❌ 验证失败</strong>\n\n错误信息: ${e.message}`;
+            }
+        }
+
+        // 页面加载时自动检查
+        window.onload = () => {
+            checkCurrentData();
+        };
+    </script>
+</body>
+
+</html>

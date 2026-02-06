@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完整诊断与恢复</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 700px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 { color: #2c3e50; margin-bottom: 20px; text-align: center; }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .section h3 { color: #34495e; margin-bottom: 15px; }
+        .status {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            background: #3498db;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover { background: #2980b9; }
+        button.success { background: #27ae60; }
+        button.success:hover { background: #229954; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PET完整诊断与恢复</h1>
+
+        <div class="section">
+            <h3>📦 内置数据检查</h3>
+            <div id="builtinStatus" class="status info">正在检查...</div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="vocabCount">-</div>
+                    <div class="stat-label">单词</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="readingCount">-</div>
+                    <div class="stat-label">阅读</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="collocationCount">-</div>
+                    <div class="stat-label">搭配</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="clozeCount">-</div>
+                    <div class="stat-label">完形</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>💾 LocalStorage 检查</h3>
+            <div id="storageStatus" class="status info">正在检查...</div>
+        </div>
+
+        <div class="section">
+            <h3>📊 详细日志</h3>
+            <pre id="log">等待检查...</pre>
+        </div>
+
+        <button class="success" onclick="fullRestore()">🚀 完整恢复（推荐）</button>
+        <button onclick="openApp()">📖 打开应用</button>
+    </div>
+
+    <script src="src/pet-content.js"></script>
+    <script>
+        const logs = [];
+        function log(msg) {
+            logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+            document.getElementById('log').textContent = logs.join('\n');
+            console.log(msg);
+        }
+
+        function updateBuiltinStats() {
+            if (!window.petContent) {
+                log('❌ window.petContent 不存在！');
+                document.getElementById('builtinStatus').className = 'status error';
+                document.getElementById('builtinStatus').textContent = '❌ 内置数据加载失败';
+                return false;
+            }
+
+            const stats = {
+                vocab: window.petContent.vocab?.length || 0,
+                readingSets: window.petContent.readingSets?.length || 0,
+                collocationSets: window.petContent.collocationSets?.length || 0,
+                clozeSets: window.petContent.clozeSets?.length || 0
+            };
+
+            document.getElementById('vocabCount').textContent = stats.vocab;
+            document.getElementById('readingCount').textContent = stats.readingSets;
+            document.getElementById('collocationCount').textContent = stats.collocationSets;
+            document.getElementById('clozeCount').textContent = stats.clozeSets;
+
+            const total = stats.vocab + stats.readingSets + stats.collocationSets + stats.clozeSets;
+            if (total > 0) {
+                document.getElementById('builtinStatus').className = 'status success';
+                document.getElementById('builtinStatus').textContent = `✅ 内置数据正常 (共 ${total} 条)`;
+                log(`✅ 内置数据: 单词=${stats.vocab}, 阅读=${stats.readingSets}, 搭配=${stats.collocationSets}, 完形=${stats.clozeSets}`);
+                return true;
+            } else {
+                document.getElementById('builtinStatus').className = 'status error';
+                document.getElementById('builtinStatus').textContent = '❌ 内置数据为空';
+                return false;
+            }
+        }
+
+        function checkLocalStorage() {
+            const keys = ['petEnglishData', 'petEnglishData_backup', 'petEnglishData_old', 'petData'];
+            let found = false;
+            let totalItems = 0;
+
+            for (const key of keys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        const count = (parsed.vocab?.length || 0) +
+                                     (parsed.readingSets?.length || 0) +
+                                     (parsed.collocationSets?.length || 0) +
+                                     (parsed.clozeSets?.length || 0);
+                        log(`✅ 找到 ${key}: ${count} 条数据`);
+                        totalItems += count;
+                        found = true;
+                    } catch (e) {
+                        log(`⚠️ ${key} 数据损坏`);
+                    }
+                }
+            }
+
+            if (found) {
+                document.getElementById('storageStatus').className = 'status success';
+                document.getElementById('storageStatus').textContent = `✅ LocalStorage 中有数据 (共 ${totalItems} 条)`;
+            } else {
+                document.getElementById('storageStatus').className = 'status error';
+                document.getElementById('storageStatus').textContent = '❌ LocalStorage 中没有数据';
+            }
+        }
+
+        function fullRestore() {
+            log('🚀 开始完整恢复...');
+
+            if (!window.petContent) {
+                log('❌ 内置数据未加载，无法恢复！');
+                return;
+            }
+
+            const data = {
+                vocab: window.petContent.vocab || [],
+                readingSets: window.petContent.readingSets || [],
+                collocationSets: window.petContent.collocationSets || [],
+                clozeSets: window.petContent.clozeSets || []
+            };
+
+            const stats = {
+                单词: data.vocab.length,
+                阅读: data.readingSets.length,
+                搭配: data.collocationSets.length,
+                完形: data.clozeSets.length
+            };
+
+            log(`📊 准备恢复数据: ${JSON.stringify(stats)}`);
+
+            // 清除旧数据
+            log('🗑️ 清除旧数据...');
+            const allKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith('pet') || key.startsWith('Pet'))) {
+                    allKeys.push(key);
+                }
+            }
+            allKeys.forEach(key => localStorage.removeItem(key));
+            log(`✅ 已清除 ${allKeys.length} 个旧数据项`);
+
+            // 保存新数据到多个位置
+            log('💾 保存新数据...');
+            const saveKeys = ['petEnglishData', 'petEnglishData_backup', 'petEnglishData_old', 'petData'];
+            let successCount = 0;
+
+            for (const key of saveKeys) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(data));
+                    successCount++;
+                    log(`✅ 已保存到 ${key}`);
+                } catch (e) {
+                    log(`❌ 保存到 ${key} 失败: ${e.message}`);
+                }
+            }
+
+            if (successCount > 0) {
+                log(`✅ 恢复成功！已保存到 ${successCount} 个位置`);
+                checkLocalStorage();
+                alert(`✅ 恢复成功！\n\n单词: ${stats.单词}\n阅读: ${stats.阅读}\n搭配: ${stats.搭配}\n完形: ${stats.完形}\n\n现在可以打开应用了！`);
+            } else {
+                log('❌ 恢复失败！');
+                alert('❌ 恢复失败，请检查浏览器是否支持 localStorage');
+            }
+        }
+
+        function openApp() {
+            window.location.href = 'src/index.html';
+        }
+
+        // 自动检查
+        window.onload = () => {
+            log('=== 开始诊断 ===\n');
+            setTimeout(() => {
+                updateBuiltinStats();
+                checkLocalStorage();
+                log('\n=== 诊断完成 ===');
+            }, 500);
+        };
+    </script>
+</body>
+</html>

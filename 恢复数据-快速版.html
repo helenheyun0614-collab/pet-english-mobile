@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速数据恢复</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        button {
+            padding: 15px 30px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            border-left: 4px solid #3498db;
+        }
+
+        .success {
+            border-left-color: #27ae60;
+        }
+
+        .error {
+            border-left-color: #e74c3c;
+        }
+
+        .warning {
+            border-left-color: #f39c12;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔧 PET英语屋快速数据恢复</h1>
+
+        <button class="btn-primary" onclick="checkData()">1️⃣ 检查当前数据</button>
+        <button class="btn-success" onclick="restoreData()">2️⃣ 恢复内置数据</button>
+
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script src="src/pet-content.js"></script>
+    <script>
+        function showResult(text, type = '') {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.className = 'result ' + type;
+            result.textContent = text;
+        }
+
+        function checkData() {
+            try {
+                const petData = localStorage.getItem('petEnglishData');
+
+                if (petData) {
+                    const parsed = JSON.parse(petData);
+                    const stats = {
+                        '单词数量': parsed.vocab?.length || 0,
+                        '阅读题数量': parsed.readingSets?.length || 0,
+                        '固定搭配数量': parsed.collocationSets?.length || 0,
+                        '完形题数量': parsed.clozeSets?.length || 0
+                    };
+
+                    showResult(`✅ 找到数据\n\n统计：\n${JSON.stringify(stats, null, 2)}\n\n数据大小：${(petData.length / 1024).toFixed(2)} KB`, 'success');
+                } else {
+                    showResult('⚠️ 没有找到数据\n\nlocalStorage中没有petEnglishData键。', 'warning');
+                }
+            } catch (e) {
+                showResult(`❌ 检查失败\n\n错误: ${e.message}`, 'error');
+            }
+        }
+
+        function restoreData() {
+            try {
+                setTimeout(() => {
+                    if (!window.petContent) {
+                        showResult('❌ 内置数据加载失败\n\n无法找到window.petContent对象。', 'error');
+                        return;
+                    }
+
+                    const builtInData = {
+                        vocab: window.petContent.vocab || [],
+                        readingSets: window.petContent.readingSets || [],
+                        collocationSets: window.petContent.collocationSets || [],
+                        clozeSets: window.petContent.clozeSets || []
+                    };
+
+                    const stats = {
+                        '单词': builtInData.vocab.length,
+                        '阅读': builtInData.readingSets.length,
+                        '固定搭配': builtInData.collocationSets.length,
+                        '完形': builtInData.clozeSets.length
+                    };
+
+                    localStorage.setItem('petEnglishData', JSON.stringify(builtInData));
+
+                    showResult(`✅ 数据恢复成功！\n\n恢复统计：\n${JSON.stringify(stats, null, 2)}\n\n数据大小：${(JSON.stringify(builtInData).length / 1024).toFixed(2)} KB\n\n现在可以打开 src/index.html 查看恢复后的数据。`, 'success');
+                }, 500);
+            } catch (e) {
+                showResult(`❌ 恢复失败\n\n错误: ${e.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>

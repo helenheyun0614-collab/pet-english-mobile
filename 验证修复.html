@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>验证修复</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #333; }
+        .test { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 4px; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .result { margin-top: 10px; padding: 10px; background: #eee; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 PET应用修复验证</h1>
+
+        <div class="test">
+            <h3>1. JavaScript 加载测试</h3>
+            <button onclick="testJS()">测试</button>
+            <div id="jsResult" class="result">等待测试...</div>
+        </div>
+
+        <div class="test">
+            <h3>2. 按钮点击测试</h3>
+            <button id="clickTestBtn">点击我</button>
+            <div id="clickResult" class="result">等待点击...</div>
+        </div>
+
+        <div class="test">
+            <h3>3. LocalStorage 测试</h3>
+            <button onclick="testStorage()">测试</button>
+            <div id="storageResult" class="result">等待测试...</div>
+        </div>
+
+        <div class="test">
+            <h3>4. 数据恢复</h3>
+            <button onclick="restoreData()">恢复数据</button>
+            <div id="restoreResult" class="result">等待操作...</div>
+        </div>
+
+        <hr>
+        <button onclick="location.href='src/index.html'" style="width: 100%; padding: 15px; font-size: 18px;">🚀 打开 PET应用</button>
+    </div>
+
+    <script>
+        // 测试1: JavaScript 加载
+        function testJS() {
+            document.getElementById('jsResult').innerHTML = '<span class="success">✅ JavaScript 正常工作！</span>';
+        }
+
+        // 测试2: 按钮点击
+        const clickTestBtn = document.getElementById('clickTestBtn');
+        clickTestBtn.addEventListener('click', () => {
+            document.getElementById('clickResult').innerHTML = '<span class="success">✅ 按钮点击正常！</span>';
+        });
+
+        // 测试3: LocalStorage
+        function testStorage() {
+            try {
+                localStorage.setItem('test', 'ok');
+                const value = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                if (value === 'ok') {
+                    document.getElementById('storageResult').innerHTML = '<span class="success">✅ LocalStorage 正常！</span>';
+                } else {
+                    document.getElementById('storageResult').innerHTML = '<span class="error">❌ LocalStorage 异常</span>';
+                }
+            } catch (e) {
+                document.getElementById('storageResult').innerHTML = '<span class="error">❌ LocalStorage 失败: ' + e.message + '</span>';
+            }
+        }
+
+        // 测试4: 恢复数据
+        async function restoreData() {
+            const result = document.getElementById('restoreResult');
+            result.innerHTML = '正在加载内置数据...';
+
+            try {
+                // 动态加载 pet-content.js
+                const script = document.createElement('script');
+                script.src = 'src/pet-content.js';
+                script.onload = () => {
+                    if (window.petContent) {
+                        const stats = {
+                            单词: window.petContent.vocab?.length || 0,
+                            阅读: window.petContent.readingSets?.length || 0,
+                            搭配: window.petContent.collocationSets?.length || 0,
+                            完形: window.petContent.clozeSets?.length || 0
+                        };
+
+                        // 保存到 localStorage
+                        localStorage.setItem('petEnglishData', JSON.stringify(window.petContent));
+                        localStorage.setItem('petEnglishData_backup', JSON.stringify(window.petContent));
+
+                        result.innerHTML = `<span class="success">✅ 数据恢复成功！统计: ${JSON.stringify(stats)}</span>`;
+                    } else {
+                        result.innerHTML = '<span class="error">❌ 内置数据加载失败</span>';
+                    }
+                };
+                script.onerror = () => {
+                    result.innerHTML = '<span class="error">❌ pet-content.js 加载失败</span>';
+                };
+                document.head.appendChild(script);
+            } catch (e) {
+                result.innerHTML = '<span class="error">❌ 恢复失败: ' + e.message + '</span>';
+            }
+        }
+
+        // 自动测试
+        window.onload = () => {
+            setTimeout(() => {
+                testJS();
+                testStorage();
+            }, 500);
+        };
+    </script>
+</body>
+</html>

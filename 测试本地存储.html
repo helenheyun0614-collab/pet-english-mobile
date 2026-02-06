@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地存储测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 0; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        .btn-info {
+            background: #2196F3;
+            color: white;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .success {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+        .warning {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 本地存储功能测试</h1>
+    
+    <div class="test-box">
+        <h2>1️⃣ 检查localStorage是否可用</h2>
+        <button class="btn-info" onclick="testLocalStorageAvailable()">运行测试</button>
+        <div id="result1" class="result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>2️⃣ 保存测试数据</h2>
+        <button class="btn-primary" onclick="saveTestData()">保存数据</button>
+        <div id="result2" class="result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>3️⃣ 读取测试数据</h2>
+        <button class="btn-primary" onclick="loadTestData()">读取数据</button>
+        <div id="result3" class="result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>4️⃣ 检查PET应用的数据</h2>
+        <button class="btn-info" onclick="checkPetData()">检查数据</button>
+        <div id="result4" class="result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>5️⃣ 清除所有数据</h2>
+        <button class="btn-danger" onclick="clearAllData()">清除数据</button>
+        <div id="result5" class="result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>📋 使用建议</h2>
+        <div class="result warning">
+如果测试失败，可能的原因：
+
+1. 浏览器设置问题
+   - 检查是否禁用了Cookie或localStorage
+   - 退出隐私/无痕模式
+   
+2. 浏览器版本太旧
+   - 更新浏览器到最新版本
+   
+3. 存储空间不足
+   - 清理浏览器缓存
+   
+4. 安全软件阻止
+   - 暂时关闭防火墙/安全软件测试
+   
+✅ 推荐使用Chrome或Edge浏览器
+        </div>
+    </div>
+
+    <script>
+        function testLocalStorageAvailable() {
+            const result = document.getElementById('result1');
+            try {
+                const test = 'test';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                result.className = 'result success';
+                result.textContent = '✅ localStorage 可用！\n浏览器支持本地存储功能。';
+            } catch (e) {
+                result.className = 'result error';
+                result.textContent = `❌ localStorage 不可用！\n错误信息: ${e.message}\n\n可能原因：\n1. 浏览器禁用了localStorage\n2. 使用隐私/无痕模式\n3. 存储配额已满`;
+            }
+        }
+
+        function saveTestData() {
+            const result = document.getElementById('result2');
+            try {
+                const testData = {
+                    testKey: '测试数据',
+                    timestamp: new Date().toISOString(),
+                    data: { count: 123, items: ['a', 'b', 'c'] }
+                };
+                
+                localStorage.setItem('testData', JSON.stringify(testData));
+                
+                result.className = 'result success';
+                result.textContent = `✅ 数据保存成功！\n\n保存内容：\n${JSON.stringify(testData, null, 2)}\n\n大小：${JSON.stringify(testData).length} 字节`;
+            } catch (e) {
+                result.className = 'result error';
+                result.textContent = `❌ 保存失败！\n错误信息: ${e.message}`;
+            }
+        }
+
+        function loadTestData() {
+            const result = document.getElementById('result3');
+            try {
+                const data = localStorage.getItem('testData');
+                
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    result.className = 'result success';
+                    result.textContent = `✅ 数据读取成功！\n\n读取内容：\n${JSON.stringify(parsed, null, 2)}`;
+                } else {
+                    result.className = 'result warning';
+                    result.textContent = '⚠️ 没有找到测试数据\n请先点击"保存数据"按钮';
+                }
+            } catch (e) {
+                result.className = 'result error';
+                result.textContent = `❌ 读取失败！\n错误信息: ${e.message}`;
+            }
+        }
+
+        function checkPetData() {
+            const result = document.getElementById('result4');
+            try {
+                const petData = localStorage.getItem('petEnglishData');
+                
+                if (petData) {
+                    const parsed = JSON.parse(petData);
+                    const stats = {
+                        '单词数量': parsed.vocab?.length || 0,
+                        '阅读题数量': parsed.readingSets?.length || 0,
+                        '听力题数量': parsed.listeningSets?.length || 0,
+                        '完形题数量': parsed.clozeSets?.length || 0
+                    };
+                    
+                    result.className = 'result success';
+                    result.textContent = `✅ 找到PET应用数据！\n\n题库统计：\n${JSON.stringify(stats, null, 2)}\n\n数据大小：${petData.length} 字节\n约 ${(petData.length / 1024).toFixed(2)} KB`;
+                } else {
+                    result.className = 'result warning';
+                    result.textContent = `⚠️ 没有找到PET应用数据\n\n可能原因：\n1. 还没有导入过题库\n2. 数据已被清除\n3. 保存失败\n\n解决方法：\n1. 打开 src/index.html\n2. 导入Excel文件\n3. 再次运行此检查`;
+                }
+            } catch (e) {
+                result.className = 'result error';
+                result.textContent = `❌ 检查失败！\n错误信息: ${e.message}`;
+            }
+        }
+
+        function clearAllData() {
+            const result = document.getElementById('result5');
+            if (confirm('确定要清除所有localStorage数据吗？')) {
+                try {
+                    const beforeSize = JSON.stringify(localStorage).length;
+                    localStorage.clear();
+                    
+                    result.className = 'result success';
+                    result.textContent = `✅ 所有数据已清除！\n\n清除前大小：${beforeSize} 字节\n清除项目：testData, petEnglishData 等`;
+                } catch (e) {
+                    result.className = 'result error';
+                    result.textContent = `❌ 清除失败！\n错误信息: ${e.message}`;
+                }
+            } else {
+                result.textContent = '❌ 已取消清除操作';
+            }
+        }
+
+        // 页面加载时自动运行第一个测试
+        window.onload = () => {
+            testLocalStorageAvailable();
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

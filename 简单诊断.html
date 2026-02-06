@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>简单诊断</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #fff; }
+        .log { margin: 5px 0; padding: 5px; background: #2d2d2d; }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        .info { color: #2196f3; }
+        button { padding: 10px 20px; margin: 5px; background: #2196f3; color: white; border: none; cursor: pointer; }
+        button:hover { background: #1976d2; }
+    </style>
+</head>
+<body>
+    <h1>PET应用诊断</h1>
+    <div id="logs"></div>
+    <button onclick="testAll()">🔍 重新测试</button>
+    <button onclick="location.href='src/index.html'">🚀 打开应用</button>
+
+    <script>
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = 'log ' + type;
+            div.textContent = msg;
+            document.getElementById('logs').appendChild(div);
+            console.log(msg);
+        }
+
+        async function testAll() {
+            document.getElementById('logs').innerHTML = '';
+            log('=== 开始诊断 ===', 'info');
+
+            // 1. 检查 pet-content.js 文件
+            log('1️⃣ 检查 pet-content.js 文件...', 'info');
+            try {
+                const response = await fetch('src/pet-content.js');
+                if (response.ok) {
+                    const content = await response.text();
+                    log(`✅ pet-content.js 存在 (${content.length} 字符)`, 'success');
+                } else {
+                    log(`❌ pet-content.js 返回状态: ${response.status}`, 'error');
+                }
+            } catch (e) {
+                log(`❌ 无法加载 pet-content.js: ${e.message}`, 'error');
+            }
+
+            // 2. 动态加载并检查 window.petContent
+            log('2️⃣ 动态加载 pet-content.js...', 'info');
+            try {
+                const script = document.createElement('script');
+                script.src = 'src/pet-content.js';
+                script.onload = () => {
+                    if (window.petContent) {
+                        const stats = {
+                            单词: window.petContent.vocab?.length || 0,
+                            阅读: window.petContent.readingSets?.length || 0,
+                            搭配: window.petContent.collocationSets?.length || 0,
+                            完形: window.petContent.clozeSets?.length || 0
+                        };
+                        log(`✅ window.petContent 加载成功!`, 'success');
+                        log(`   统计: ${JSON.stringify(stats)}`, 'info');
+
+                        // 3. 恢复数据
+                        log('3️⃣ 恢复数据到 localStorage...', 'info');
+                        try {
+                            const data = {
+                                vocab: window.petContent.vocab,
+                                readingSets: window.petContent.readingSets,
+                                collocationSets: window.petContent.collocationSets,
+                                clozeSets: window.petContent.clozeSets
+                            };
+                            localStorage.setItem('petEnglishData', JSON.stringify(data));
+                            localStorage.setItem('petEnglishData_backup', JSON.stringify(data));
+                            log('✅ 数据已恢复到 localStorage', 'success');
+                            log('🎉 修复完成！现在可以打开应用了', 'success');
+                        } catch (e) {
+                            log(`❌ 恢复数据失败: ${e.message}`, 'error');
+                        }
+                    } else {
+                        log('❌ window.petContent 未定义', 'error');
+                    }
+                };
+                script.onerror = () => {
+                    log('❌ pet-content.js 加载失败', 'error');
+                };
+                document.head.appendChild(script);
+            } catch (e) {
+                log(`❌ 加载脚本出错: ${e.message}`, 'error');
+            }
+
+            // 4. 检查 localStorage
+            log('4️⃣ 检查 localStorage...', 'info');
+            setTimeout(() => {
+                const keys = ['petEnglishData', 'petEnglishData_backup'];
+                for (const key of keys) {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        try {
+                            const parsed = JSON.parse(data);
+                            const total = (parsed.vocab?.length || 0) +
+                                         (parsed.readingSets?.length || 0) +
+                                         (parsed.collocationSets?.length || 0) +
+                                         (parsed.clozeSets?.length || 0);
+                            log(`✅ ${key}: ${total} 条数据`, 'success');
+                        } catch (e) {
+                            log(`⚠️ ${key}: 数据损坏`, 'error');
+                        }
+                    }
+                }
+                log('=== 诊断完成 ===', 'info');
+            }, 1000);
+        }
+
+        // 自动运行测试
+        window.onload = () => testAll();
+    </script>
+</body>
+</html>

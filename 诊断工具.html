@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PET英语屋诊断工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .section.success {
+            border-left-color: #27ae60;
+        }
+
+        .section.error {
+            border-left-color: #e74c3c;
+        }
+
+        .section.warning {
+            border-left-color: #f39c12;
+        }
+
+        button {
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 PET英语屋诊断工具</h1>
+
+        <div class="section">
+            <h3>📊 系统检查</h3>
+            <button class="btn-primary" onclick="runDiagnostics()">运行完整诊断</button>
+            <div id="diagnosticResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h3>💾 数据恢复</h3>
+            <button class="btn-success" onclick="restoreData()">恢复内置数据</button>
+            <div id="restoreResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h3>🗑️ 清除数据</h3>
+            <button class="btn-danger" onclick="clearData()">清除所有数据</button>
+            <div id="clearResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="src/pet-content.js"></script>
+    <script>
+        function showResult(elementId, text, type = '') {
+            const result = document.getElementById(elementId);
+            result.style.display = 'block';
+            result.className = 'result';
+            result.textContent = text;
+        }
+
+        function runDiagnostics() {
+            const result = [];
+            result.push('═══════════════════════════════════════');
+            result.push('🔍 PET英语屋诊断报告');
+            result.push('═══════════════════════════════════════\n');
+
+            // 1. 检查内置数据
+            result.push('1️⃣ 检查内置数据 (window.petContent)');
+            if (window.petContent) {
+                result.push('   ✅ window.petContent 存在');
+                result.push(`   📊 内置数据统计:`);
+                result.push(`      - 单词: ${window.petContent.vocab?.length || 0} 个`);
+                result.push(`      - 阅读: ${window.petContent.readingSets?.length || 0} 题`);
+                result.push(`      - 固定搭配: ${window.petContent.collocationSets?.length || 0} 题`);
+                result.push(`      - 完形: ${window.petContent.clozeSets?.length || 0} 题`);
+            } else {
+                result.push('   ❌ window.petContent 不存在');
+                result.push('   ⚠️ 可能原因: src/pet-content.js 文件未加载');
+            }
+            result.push('');
+
+            // 2. 检查localStorage数据
+            result.push('2️⃣ 检查 localStorage 数据');
+            const keys = ['petEnglishData', 'petEnglishData_backup', 'petEnglishData_old', 'petData'];
+            let foundData = false;
+
+            for (const key of keys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    foundData = true;
+                    try {
+                        const parsed = JSON.parse(data);
+                        result.push(`   ✅ 找到数据键: ${key}`);
+                        result.push(`   📊 数据统计:`);
+                        result.push(`      - 单词: ${parsed.vocab?.length || 0} 个`);
+                        result.push(`      - 阅读: ${parsed.readingSets?.length || 0} 题`);
+                        result.push(`      - 固定搭配: ${parsed.collocationSets?.length || 0} 题`);
+                        result.push(`      - 完形: ${parsed.clozeSets?.length || 0} 题`);
+                        result.push(`      - 数据大小: ${(data.length / 1024).toFixed(2)} KB`);
+                    } catch (e) {
+                        result.push(`   ❌ ${key} 数据解析失败: ${e.message}`);
+                    }
+                    break;
+                }
+            }
+
+            if (!foundData) {
+                result.push('   ⚠️ 没有找到任何 localStorage 数据');
+                result.push('   💡 建议: 点击"恢复内置数据"按钮');
+            }
+            result.push('');
+
+            // 3. 检查浏览器兼容性
+            result.push('3️⃣ 浏览器兼容性检查');
+            result.push(`   User Agent: ${navigator.userAgent}`);
+            result.push(`   LocalStorage 支持: ${typeof Storage !== 'undefined' ? '✅' : '❌'}`);
+            result.push(`   JSON 支持: ${typeof JSON !== 'undefined' ? '✅' : '❌'}`);
+            result.push('');
+
+            // 4. 诊断结果
+            result.push('═══════════════════════════════════════');
+            result.push('📋 诊断建议:');
+
+            if (!window.petContent) {
+                result.push('   ❌ 内置数据未加载，请检查 src/pet-content.js 文件');
+            } else if (!foundData) {
+                result.push('   ⚠️ localStorage 中没有数据，建议恢复内置数据');
+            } else {
+                result.push('   ✅ 系统正常，可以正常使用');
+            }
+
+            result.push('═══════════════════════════════════════');
+
+            showResult('diagnosticResult', result.join('\n'));
+        }
+
+        function restoreData() {
+            try {
+                setTimeout(() => {
+                    if (!window.petContent) {
+                        showResult('restoreResult', '❌ 内置数据加载失败\n\n无法找到 window.petContent 对象。\n请确保 src/pet-content.js 文件存在且正确加载。');
+                        return;
+                    }
+
+                    const builtInData = {
+                        vocab: window.petContent.vocab || [],
+                        readingSets: window.petContent.readingSets || [],
+                        collocationSets: window.petContent.collocationSets || [],
+                        clozeSets: window.petContent.clozeSets || []
+                    };
+
+                    const stats = {
+                        '单词': builtInData.vocab.length,
+                        '阅读': builtInData.readingSets.length,
+                        '固定搭配': builtInData.collocationSets.length,
+                        '完形': builtInData.clozeSets.length
+                    };
+
+                    // 保存到多个位置
+                    const saveKeys = ['petEnglishData', 'petEnglishData_backup', 'petEnglishData_old', 'petData'];
+                    saveKeys.forEach(key => {
+                        try {
+                            localStorage.setItem(key, JSON.stringify(builtInData));
+                        } catch (e) {
+                            console.warn(`保存到 ${key} 失败:`, e);
+                        }
+                    });
+
+                    showResult('restoreResult', `✅ 数据恢复成功！\n\n恢复统计:\n${JSON.stringify(stats, null, 2)}\n\n数据大小: ${(JSON.stringify(builtInData).length / 1024).toFixed(2)} KB\n\n现在可以打开 src/index.html 查看恢复后的数据。`);
+                }, 500);
+            } catch (e) {
+                showResult('restoreResult', `❌ 恢复失败\n\n错误信息: ${e.message}`);
+            }
+        }
+
+        function clearData() {
+            if (confirm('确定要清除所有 localStorage 数据吗？此操作不可恢复！')) {
+                try {
+                    const keys = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (key && key.startsWith('pet')) {
+                            keys.push(key);
+                        }
+                    }
+
+                    keys.forEach(key => {
+                        localStorage.removeItem(key);
+                    });
+
+                    showResult('clearResult', `✅ 已清除所有 PET 相关数据\n\n清除的键:\n${keys.join('\n')}\n\n共 ${keys.length} 个键\n\n现在可以点击"恢复内置数据"来重新加载数据。`);
+                } catch (e) {
+                    showResult('clearResult', `❌ 清除失败\n\n错误信息: ${e.message}`);
+                }
+            } else {
+                showResult('clearResult', '❌ 已取消清除操作');
+            }
+        }
+
+        // 页面加载时自动运行诊断
+        window.onload = () => {
+            runDiagnostics();
+        };
+    </script>
+</body>
+
+</html>

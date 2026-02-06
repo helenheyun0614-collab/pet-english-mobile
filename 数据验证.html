@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>数据验证</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #fff; }
+        .result { margin: 10px 0; padding: 10px; background: #2d2d2d; border-radius: 4px; }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        button { padding: 10px 20px; margin: 5px; background: #2196f3; color: white; border: none; cursor: pointer; }
+        button:hover { background: #1976d2; }
+    </style>
+</head>
+<body>
+    <h1>PET数据验证工具</h1>
+    <div id="output"></div>
+    <button onclick="testData()">测试数据生成</button>
+    <button onclick="restoreData()">恢复数据到localStorage</button>
+    <button onclick="openApp()">打开应用</button>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(msg, type = '') {
+            const div = document.createElement('div');
+            div.className = 'result ' + type;
+            div.textContent = msg;
+            output.appendChild(div);
+            console.log(msg);
+        }
+
+        async function testData() {
+            output.innerHTML = '';
+            log('=== 开始测试 ===');
+
+            try {
+                // 动态加载 pet-content.js
+                const script = document.createElement('script');
+                script.src = 'src/pet-content.js';
+                script.onload = () => {
+                    if (!window.petContent) {
+                        log('❌ window.petContent 未定义', 'error');
+                        return;
+                    }
+
+                    const stats = {
+                        单词: window.petContent.vocab?.length || 0,
+                        阅读: window.petContent.readingSets?.length || 0,
+                        搭配: window.petContent.collocationSets?.length || 0,
+                        完形: window.petContent.clozeSets?.length || 0
+                    };
+
+                    log(`📊 数据统计:`, 'success');
+                    log(`  单词: ${stats.单词}`);
+                    log(`  阅读: ${stats.阅读}`);
+                    log(`  搭配: ${stats.搭配}`);
+                    log(`  完形: ${stats.完形}`);
+
+                    // 检查每个模块的前几条数据
+                    if (stats.阅读 > 0) {
+                        log(`\n🔍 阅读理解第1题:`, 'success');
+                        log(`  ID: ${window.petContent.readingSets[0].id}`);
+                        log(`  问题: ${window.petContent.readingSets[0].question?.substring(0, 50)}...`);
+
+                        if (stats.阅读 > 1) {
+                            log(`\n🔍 阅读理解第2题:`, 'success');
+                            log(`  ID: ${window.petContent.readingSets[1].id}`);
+                            log(`  问题: ${window.petContent.readingSets[1].question?.substring(0, 50)}...`);
+                        }
+
+                        if (stats.阅读 > 100) {
+                            log(`\n🔍 阅读理解第100题:`, 'success');
+                            log(`  ID: ${window.petContent.readingSets[99].id}`);
+                        }
+
+                        if (stats.阅读 > 150) {
+                            log(`\n🔍 阅读理解第150题:`, 'success');
+                            log(`  ID: ${window.petContent.readingSets[149].id}`);
+                        }
+                    }
+
+                    if (stats.阅读 === 200) {
+                        log(`\n✅ 数据完整！`, 'success');
+                    } else {
+                        log(`\n⚠️ 预期200道阅读题，实际${stats.阅读}道`, 'error');
+                    }
+                };
+                script.onerror = () => {
+                    log('❌ pet-content.js 加载失败', 'error');
+                };
+                document.head.appendChild(script);
+            } catch (e) {
+                log(`❌ 错误: ${e.message}`, 'error');
+            }
+        }
+
+        function restoreData() {
+            if (!window.petContent) {
+                log('❌ 请先点击"测试数据生成"', 'error');
+                return;
+            }
+
+            const data = {
+                vocab: window.petContent.vocab,
+                readingSets: window.petContent.readingSets,
+                collocationSets: window.petContent.collocationSets,
+                clozeSets: window.petContent.clozeSets
+            };
+
+            localStorage.setItem('petEnglishData', JSON.stringify(data));
+            localStorage.setItem('petEnglishData_backup', JSON.stringify(data));
+
+            const total = (data.vocab?.length || 0) +
+                         (data.readingSets?.length || 0) +
+                         (data.collocationSets?.length || 0) +
+                         (data.clozeSets?.length || 0);
+
+            log(`✅ 已恢复 ${total} 条数据到 localStorage`, 'success');
+        }
+
+        function openApp() {
+            window.location.href = 'src/index.html';
+        }
+
+        // 自动运行测试
+        window.onload = () => testData();
+    </script>
+</body>
+</html>
