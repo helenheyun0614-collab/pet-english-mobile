@@ -3354,6 +3354,10 @@
                         <span class="badge-icon">💾</span>
                         <span class="sidebar-badge-text">导出数据</span>
                     </div>
+                    <div class="sidebar-badge" id="versionHistoryBtn" style="cursor: pointer;">
+                        <span class="badge-icon">📜</span>
+                        <span class="sidebar-badge-text">历史版本</span>
+                    </div>
                     <div class="sidebar-badge" id="clearStorageBtn" style="cursor: pointer;">
                         <span class="badge-icon">🗑️</span>
                         <span class="sidebar-badge-text">清除缓存</span>
@@ -3746,8 +3750,8 @@
             <div class="dict-modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
                 <div class="dict-modal-header">
                     <h2>⚙️ 词典设置</h2>
-                    <span class="dict-modal-close" id="dictSettingsClose"
-                        onclick="if(typeof closeDictSettingsModal === 'function') { closeDictSettingsModal(); } else { document.getElementById('dictSettingsModal').classList.remove('show'); } return false;"
+                    <span class="dict-modal-close"
+                        onclick="closeAllModals(); return false;"
                         style="position: relative; z-index: 10006; pointer-events: auto; cursor: pointer;">✕</span>
                 </div>
                 <div class="dict-modal-body" style="padding: 24px;">
@@ -3968,6 +3972,26 @@
                             <p style="margin: 0; font-size: 0.8rem; color: #2e7d32; line-height: 1.5;">
                                 <strong>✨ 智能切换：</strong>系统会自动尝试多个翻译源，选择最准确的结果。如果某个API失败，会自动切换到下一个，确保翻译服务始终可用。
                             </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 版本历史模态框 -->
+        <div class="dict-modal" id="versionHistoryModal" style="z-index: 10002;">
+            <div class="dict-modal-content" style="max-width: 800px; max-height: 85vh; overflow-y: auto;">
+                <div class="dict-modal-header">
+                    <h2>📜 历史版本</h2>
+                    <span class="dict-modal-close"
+                        onclick="closeAllModals(); return false;"
+                        style="position: relative; z-index: 10006; pointer-events: auto; cursor: pointer;">✕</span>
+                </div>
+                <div class="dict-modal-body" style="padding: 24px;">
+                    <div id="versionHistoryList">
+                        <div style="text-align: center; padding: 40px; color: #8ea6ff;">
+                            <div style="font-size: 2rem; margin-bottom: 12px;">⏳</div>
+                            <div>正在加载版本历史...</div>
                         </div>
                     </div>
                 </div>
@@ -9336,24 +9360,25 @@
             }
         }
 
-        // 关闭模态框（确保全局可访问）
+        // 关闭所有模态框
+        function closeAllModals() {
+            console.log('🔄 关闭所有模态框');
+            // 关闭所有模态框
+            document.querySelectorAll('.dict-modal.show').forEach(modal => {
+                modal.classList.remove('show');
+                console.log('✅ 已关闭模态框:', modal.id);
+            });
+        }
+
+        // 关闭模态框（保持兼容性）
         function closeDictModal() {
             console.log('🔄 关闭词典模态框');
-            const dictModalElement = document.getElementById("dictModal");
-            if (dictModalElement) {
-                dictModalElement.classList.remove('show');
-                console.log('✅ 模态框已关闭');
-            } else {
-                console.warn('⚠️ 找不到 dictModal 元素');
-                // 备用方案：查找所有模态框并关闭
-                document.querySelectorAll('.dict-modal').forEach(modal => {
-                    modal.classList.remove('show');
-                });
-            }
+            closeAllModals();
         }
 
         // 确保函数全局可访问
         window.closeDictModal = closeDictModal;
+        window.closeAllModals = closeAllModals;
 
         // 转义HTML
         function escapeHtml(text) {
@@ -10454,6 +10479,9 @@
             } else {
                 console.error('❌ 找不到 quizWordBtn 元素');
             }
+
+            // 绑定版本历史按钮
+            bindVersionHistoryButton();
         }
 
         // 立即尝试绑定，如果DOM未准备好则延迟
@@ -12744,11 +12772,10 @@
             );
 
             if (isCloseButton) {
-                e.preventDefault();
-                e.stopPropagation();
                 console.log('🖱️ 关闭按钮被点击（全局事件委托）', e.target.id || e.target.className);
                 closeDictModal();
-                return false;
+                // 不要阻止事件传播，让按钮的 onclick 也能执行
+                return;
             }
 
             // 点击模态框外部关闭
@@ -12757,7 +12784,7 @@
                 console.log('🖱️ 点击模态框外部，关闭');
                 closeDictModal();
             }
-        }, true); // 使用捕获阶段，确保优先处理
+        }, false); // 使用冒泡阶段，让按钮的 onclick 事件先执行
 
         console.log('✅ 词典模态框关闭事件已绑定（全局事件委托）');
 
@@ -13327,6 +13354,288 @@
         };
 
         console.log('💡 提示：如果数据丢失，请在控制台运行 recoverData() 来恢复');
+
+        // ============ 📜 版本历史管理 ============
+
+        // 版本历史管理器（使用版本号 v1, v2, v3...）
+        const versionManager = {
+            // 存储key
+            storageKey: 'pet_version_history',
+
+            // 迁移旧数据：为没有版本号的旧数据添加版本号
+            migrateOldData() {
+                try {
+                    const versions = this.getVersions();
+                    let needsMigration = false;
+
+                    versions.forEach((v, index) => {
+                        if (!v.versionNumber) {
+                            // 为旧数据分配版本号
+                            v.versionNumber = `v${index + 1}`;
+                            v.number = index + 1;
+                            needsMigration = true;
+                            console.log(`🔄 迁移旧数据: 版本 ${v.versionNumber}`);
+                        }
+                    });
+
+                    if (needsMigration) {
+                        this.saveVersions(versions);
+                        console.log('✅ 旧数据迁移完成');
+                    }
+                } catch (e) {
+                    console.error('❌ 数据迁移失败:', e);
+                }
+            },
+
+            // 获取所有版本
+            getVersions() {
+                try {
+                    const data = localStorage.getItem(this.storageKey);
+                    return data ? JSON.parse(data) : [];
+                } catch (e) {
+                    console.error('获取版本历史失败:', e);
+                    return [];
+                }
+            },
+
+            // 保存版本列表
+            saveVersions(versions) {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(versions));
+                    return true;
+                } catch (e) {
+                    console.error('保存版本历史失败:', e);
+                    return false;
+                }
+            },
+
+            // 获取下一个版本号
+            getNextVersionNumber() {
+                const versions = this.getVersions();
+                if (versions.length === 0) return 1;
+
+                // 找出最大的版本号
+                let maxNum = 0;
+                versions.forEach(v => {
+                    // 兼容旧数据：如果没有 versionNumber，尝试使用 number 字段
+                    let verNum = v.versionNumber || v.number;
+                    if (verNum) {
+                        // 移除 'v' 前缀（如果有）
+                        const num = parseInt(String(verNum).replace(/^v/i, ''));
+                        if (!isNaN(num) && num > maxNum) {
+                            maxNum = num;
+                        }
+                    }
+                });
+                return maxNum + 1;
+            },
+
+            // 创建新版本快照
+            createVersion(description = '') {
+                const versions = this.getVersions();
+                const now = new Date();
+                const versionNumber = this.getNextVersionNumber();
+
+                const version = {
+                    versionNumber: `v${versionNumber}`,
+                    number: versionNumber,
+                    id: Date.now(), // 保留唯一ID用于内部操作
+                    timestamp: now.toISOString(),
+                    date: now.toLocaleString('zh-CN'),
+                    description: description || '自动保存',
+                    data: {
+                        vocab: data.vocab || [],
+                        readingSets: data.readingSets || [],
+                        collocationSets: data.collocationSets || [],
+                        clozeSets: data.clozeSets || []
+                    },
+                    stats: {
+                        vocab: (data.vocab || []).length,
+                        reading: (data.readingSets || []).length,
+                        collocation: (data.collocationSets || []).length,
+                        cloze: (data.clozeSets || []).length
+                    }
+                };
+
+                // 添加到列表开头（最新的在前面）
+                versions.unshift(version);
+
+                // 只保留最近50个版本
+                if (versions.length > 50) {
+                    versions.splice(50);
+                }
+
+                this.saveVersions(versions);
+                console.log(`✅ 已创建版本快照: ${version.versionNumber} - ${version.description}`);
+                return version;
+            },
+
+            // 恢复到指定版本
+            restoreVersion(versionNumber) {
+                const versions = this.getVersions();
+                const version = versions.find(v => v.versionNumber === versionNumber || v.id === versionNumber);
+
+                if (!version) {
+                    alert('❌ 未找到该版本');
+                    return false;
+                }
+
+                if (!confirm(`确定要恢复到版本 ${version.versionNumber} 吗？\n\n${version.description}\n\n创建时间: ${version.date}\n\n当前数据会被保存为新版本。`)) {
+                    return false;
+                }
+
+                // 先创建当前状态的快照
+                this.createVersion('恢复前自动备份');
+
+                // 恢复数据
+                data.vocab = Array.isArray(version.data.vocab) ? version.data.vocab : [];
+                data.readingSets = Array.isArray(version.data.readingSets) ? version.data.readingSets : [];
+                data.collocationSets = Array.isArray(version.data.collocationSets) ? version.data.collocationSets : [];
+                data.clozeSets = Array.isArray(version.data.clozeSets) ? version.data.clozeSets : [];
+
+                saveDataToLocalStorage();
+                updateBankStatistics();
+
+                alert(`✅ 已成功恢复到版本 ${version.versionNumber}\n\n${version.description}\n\n页面将刷新。`);
+                window.location.reload();
+                return true;
+            },
+
+            // 删除版本
+            deleteVersion(versionNumber) {
+                if (!confirm(`确定删除版本 ${versionNumber} 吗？\n\n此操作不可撤销！`)) return false;
+
+                const versions = this.getVersions();
+                const filtered = versions.filter(v => v.versionNumber !== versionNumber && v.id !== versionNumber);
+                this.saveVersions(filtered);
+                showVersionHistory(); // 刷新显示
+                return true;
+            }
+        };
+
+        // 显示版本历史
+        function showVersionHistory() {
+            // 先迁移旧数据（如果有）
+            versionManager.migrateOldData();
+
+            const modal = document.getElementById('versionHistoryModal');
+            const listContainer = document.getElementById('versionHistoryList');
+
+            if (!modal || !listContainer) return;
+
+            modal.classList.add('show');
+
+            const versions = versionManager.getVersions();
+
+            if (versions.length === 0) {
+                listContainer.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: #8ea6ff;">
+                        <div style="font-size: 3rem; margin-bottom: 16px;">📭</div>
+                        <div style="font-size: 1.2rem; margin-bottom: 8px; color: #51627a;">暂无历史版本</div>
+                        <div style="font-size: 0.9rem; color: #8ea6ff;">系统会自动在重要操作时创建版本快照</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div style="margin-bottom: 20px;">';
+            html += `<div style="font-size: 0.9rem; color: #51627a; margin-bottom: 12px;">
+                        💡 提示：版本按时间倒序排列（v${versionManager.getNextVersionNumber() - 1 || 0} 是最新版本）
+                     </div>`;
+            html += '<button onclick="versionManager.createVersion(\'手动创建快照\'); showVersionHistory();" style="padding: 10px 20px; background: linear-gradient(135deg, #70a1ff, #8ea6ff); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">💾 创建当前快照</button>';
+            html += '</div>';
+
+            versions.forEach((version, index) => {
+                const isFirst = index === 0;
+                // 兼容旧数据：获取版本号
+                const displayVersion = version.versionNumber || (version.number ? `v${version.number}` : 'v?');
+
+                html += `
+                    <div style="background: ${isFirst ? 'linear-gradient(135deg, #e8f4ff, #f0f4ff)' : '#ffffff'};
+                                border: 2px solid ${isFirst ? '#70a1ff' : '#e8eeff'};
+                                border-radius: 12px;
+                                padding: 20px;
+                                margin-bottom: 16px;
+                                box-shadow: ${isFirst ? '0 4px 12px rgba(112, 161, 255, 0.15)' : '0 2px 8px rgba(0, 0, 0, 0.05)'};">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+                                    <span style="background: linear-gradient(135deg, #4c55a4, #5c6bc0); color: white;
+                                                padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 1rem;">
+                                        ${displayVersion}
+                                    </span>
+                                    ${isFirst ? '<span style="padding: 4px 12px; background: linear-gradient(135deg, #70a1ff, #8ea6ff); color: white; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">⭐ 最新</span>' : ''}
+                                </div>
+                                <div style="font-weight: 600; color: #1b2540; font-size: 1rem; margin-bottom: 4px;">
+                                    ${version.description}
+                                </div>
+                                <div style="color: #8ea6ff; font-size: 0.8rem;">📅 ${version.date}</div>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-left: 16px;">
+                                <button onclick="versionManager.restoreVersion('${displayVersion}')"
+                                        style="padding: 8px 16px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; white-space: nowrap;">
+                                    ↻ 恢复到此版本
+                                </button>
+                                ${!isFirst ? `<button onclick="versionManager.deleteVersion('${displayVersion}')"
+                                        style="padding: 8px 12px; background: #f5f5f5; color: #ef5350; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; font-size: 0.85rem;">
+                                        🗑️
+                                        </button>` : ''}
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px; background: ${isFirst ? 'rgba(255,255,255,0.6)' : '#f9fbff'}; border-radius: 8px;">
+                            <div style="text-align: center;">
+                                <div style="color: #8ea6ff; font-size: 0.75rem;">📝 单词</div>
+                                <div style="color: #4c55a4; font-weight: 700; font-size: 1.1rem;">${version.stats.vocab}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="color: #8ea6ff; font-size: 0.75rem;">📖 阅读</div>
+                                <div style="color: #4c55a4; font-weight: 700; font-size: 1.1rem;">${version.stats.reading}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="color: #8ea6ff; font-size: 0.75rem;">🔗 搭配</div>
+                                <div style="color: #4c55a4; font-weight: 700; font-size: 1.1rem;">${version.stats.collocation}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="color: #8ea6ff; font-size: 0.75rem;">✏️ 完形</div>
+                                <div style="color: #4c55a4; font-weight: 700; font-size: 1.1rem;">${version.stats.cloze}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            listContainer.innerHTML = html;
+        }
+
+        // 绑定"历史版本"按钮事件
+        function bindVersionHistoryButton() {
+            const btn = document.getElementById('versionHistoryBtn');
+            if (btn) {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showVersionHistory();
+                    return false;
+                });
+            }
+        }
+
+        // 在重要操作时自动创建版本快照
+        const originalSaveData = saveDataToLocalStorage;
+        saveDataToLocalStorage = function() {
+            const result = originalSaveData.apply(this, arguments);
+            // 每次保存数据时，创建版本快照（最多每5分钟一次）
+            const now = Date.now();
+            if (!window._lastVersionSave || now - window._lastVersionSave > 5 * 60 * 1000) {
+                versionManager.createVersion('自动保存');
+                window._lastVersionSave = now;
+            }
+            return result;
+        };
+
+        // 导出到全局
+        window.versionManager = versionManager;
+        window.showVersionHistory = showVersionHistory;
 
         console.log('🎉 PET英语屋初始化完成！');
     </script>
