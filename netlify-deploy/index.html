@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
-    <title>PET英语屋 - 移动端 v3.2 (20260211-170713)</title>
+    <title>PET英语屋 - 移动端 v3.3 (20260211-172146)</title>
     <link rel="manifest" href="manifest.json">
     <style>
         /* ============================================
@@ -683,7 +683,7 @@
 
         .nav-btn {
             flex: 1;
-            height: 48px;
+            height: 50px;
             border-radius: var(--radius-md);
             background: linear-gradient(135deg, #22c55e, #16a34a);
             color: white;
@@ -716,7 +716,7 @@
         }
 
         .nav-icon {
-            font-size: 20px;
+            font-size: 28px;
             line-height: 1;
         }
 
@@ -1016,10 +1016,8 @@
             <div class="modal-nav">
                 <button class="nav-btn" onclick="prevItem()" id="prev-btn">
                     <span class="nav-icon">◀</span>
-                    <span>上一个</span>
                 </button>
                 <button class="nav-btn" onclick="nextItem()" id="next-btn">
-                    <span>下一个</span>
                     <span class="nav-icon">▶</span>
                 </button>
             </div>
@@ -1346,16 +1344,17 @@
                 return;
             }
 
-            // 生成测试题
+            // 生成测试题（反向：显示中文，选英文）
             quizState.questions = [];
             quizWords.forEach(word => {
-                // 生成3个错误选项
-                const wrongAnswers = generateWrongAnswers(word, quizWords);
-                const options = shuffleArray([word.meaning, ...wrongAnswers]);
+                // 生成3个错误选项（英文单词）
+                const wrongAnswers = generateWrongWordOptions(word, quizWords);
+                const options = shuffleArray([word.word, ...wrongAnswers]);
 
                 quizState.questions.push({
                     word: word.word,
-                    correctAnswer: word.meaning,
+                    meaning: word.meaning,
+                    correctAnswer: word.word,
                     options: options
                 });
             });
@@ -1368,18 +1367,18 @@
             showQuizQuestion();
         }
 
-        function generateWrongAnswers(correctWord, allWords) {
-            const wrongAnswers = [];
+        function generateWrongWordOptions(correctWord, allWords) {
+            const wrongOptions = [];
             const available = allWords.filter(w => w.word !== correctWord.word);
 
-            // 随机选择3个错误答案
-            while (wrongAnswers.length < 3 && available.length > 0) {
+            // 随机选择3个错误单词
+            while (wrongOptions.length < 3 && available.length > 0) {
                 const randomIndex = Math.floor(Math.random() * available.length);
-                wrongAnswers.push(available[randomIndex].meaning);
+                wrongOptions.push(available[randomIndex].word);
                 available.splice(randomIndex, 1);
             }
 
-            return wrongAnswers;
+            return wrongOptions;
         }
 
         function shuffleArray(array) {
@@ -1409,13 +1408,13 @@
 
                 <div class="word-card" style="text-align: center; padding: 32px 24px;">
                     <div style="font-size: 14px; color: var(--color-text-secondary); margin-bottom: 16px;">
-                        ⬇️ 请选择正确的中文释义 ⬇️
+                        ⬇️ 请选择对应的英文单词 ⬇️
                     </div>
-                    <div class="word-main" style="font-size: 36px; margin: 24px 0; color: var(--color-primary); font-weight: 700;">
-                        ${question.word}
+                    <div class="word-meaning-text" style="font-size: 32px; margin: 24px 0; color: var(--color-primary); font-weight: 700;">
+                        ${question.meaning}
                     </div>
                     <div style="font-size: 12px; color: #ef4444; margin-bottom: 20px;">
-                        ⚠️ 测试模式：中文释义已隐藏
+                        ⚠️ 测试模式：看中文选英文
                     </div>
                     <div class="quiz-options">
                         ${question.options.map((option, index) => `
@@ -2708,45 +2707,10 @@
         }, false);
 
         function handleSwipe() {
-            // 只有在模块打开时才响应手势
-            if (!state.currentModule || !document.getElementById('module-modal').classList.contains('show')) {
-                return;
-            }
-
-            const swipeDistanceX = touchEndX - touchStartX;
-            const swipeDistanceY = touchEndY - touchStartY;
-            const absX = Math.abs(swipeDistanceX);
-            const absY = Math.abs(swipeDistanceY);
-
-            // 判断是水平滑动还是垂直滑动（取较大的方向）
-            if (absX > absY && absX > SWIPE_THRESHOLD) {
-                // 水平滑动：左右切换题目
-                // 左滑（下一个）
-                if (swipeDistanceX < -SWIPE_THRESHOLD) {
-                    if (state.currentModule === 'vocab') {
-                        nextVocab();
-                    } else if (state.currentModule === 'reading') {
-                        nextReading();
-                    } else if (state.currentModule === 'collocation') {
-                        nextCollocation();
-                    } else if (state.currentModule === 'cloze') {
-                        nextCloze();
-                    }
-                }
-                // 右滑（上一个）
-                else if (swipeDistanceX > SWIPE_THRESHOLD) {
-                    if (state.currentIndex > 0) {
-                        state.currentIndex--;
-                        renderCurrentItem();
-                    }
-                }
-            } else if (absY > absX && absY > SWIPE_THRESHOLD) {
-                // 垂直滑动：上下滚动内容
-                // 向上滑动（手指向上，Y值减小）：向上滚动内容
-                // 向下滑动（手指向下，Y值增加）：向下滚动内容
-                // 注意：这是自然的滚动行为，浏览器会自动处理，我们不需要额外代码
-                // 只要确保没有调用 preventDefault() 阻止默认行为即可
-            }
+            // 已禁用左右滑动切换功能
+            // 请使用底部的导航按钮（◀ ▶）来切换题目
+            // 垂直滑动（上下滚动）由浏览器默认处理
+            return;
         }
 
         // ============================================

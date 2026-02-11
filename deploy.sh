@@ -20,7 +20,7 @@ cp /Users/helen/Downloads/Pet/src/index-mobile.html /Users/helen/Downloads/Pet/n
 
 # 更新版本号（添加时间戳）
 TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
-sed -i '' "s/<title>PET英语屋 - 移动端.*<\/title>/<title>PET英语屋 - 移动端 v3.2 ($TIMESTAMP)<\/title>/" /Users/helen/Downloads/Pet/netlify-deploy/index.html
+sed -i '' "s/<title>PET英语屋 - 移动端.*<\/title>/<title>PET英语屋 - 移动端 v3.3 ($TIMESTAMP)<\/title>/" /Users/helen/Downloads/Pet/netlify-deploy/index.html
 
 echo -e "${GREEN}✅ 部署文件已准备${NC}"
 echo ""
@@ -34,13 +34,13 @@ cd /Users/helen/Downloads/Pet
 git add -A
 
 # 提交
-git commit -m "🚀 v3.2: 重大修复和改进
+git commit -m "🚀 v3.3: UI和交互优化
 
 更新内容：
-- 导航按钮移到底部，不再遮挡内容
-- 测试界面优化：紫色渐变背景，明显的测试提示
-- 语音API升级：使用在线词典音频（有道/Google）
-- 修复所有已知问题"
+- 导航按钮简化：只保留箭头图标（增大到28px）
+- 测试模式改进：显示中文释义，选择英文单词
+- 移除左右滑动切换单词功能（避免误触）
+- 词典查询也使用在线音频API"
 
 # 推送
 git push origin main
