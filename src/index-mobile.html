@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
-    <title>PET英语屋 - 移动端 v2.3 (20260211-154622)</title>
+    <title>PET英语屋 - 移动端 v3.1 (20260211-165122)</title>
     <link rel="manifest" href="manifest.json">
     <style>
         /* ============================================
@@ -671,57 +671,53 @@
            模态框导航按钮
            ============================================ */
         .modal-nav {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            transform: translateY(-50%);
-            width: 100%;
-            pointer-events: none;
             display: flex;
             justify-content: space-between;
-            padding: 0;
-            z-index: 100;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: var(--color-card);
+            border-top: 1px solid var(--color-border);
+            margin-top: var(--spacing-md);
         }
 
         .nav-btn {
-            pointer-events: auto;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
+            flex: 1;
+            height: 48px;
+            border-radius: var(--radius-md);
             background: linear-gradient(135deg, #22c55e, #16a34a);
             color: white;
-            border: 3px solid white;
+            border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
             transition: all 0.2s;
-            z-index: 101;
-            margin: 0 8px;
+            font-size: 16px;
+            font-weight: 600;
         }
 
         .nav-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(34, 197, 94, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
         }
 
         .nav-btn:active {
-            transform: scale(0.95);
+            transform: translateY(0);
         }
 
         .nav-btn:disabled {
             background: linear-gradient(135deg, #9ca3af, #6b7280);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            opacity: 0.4;
+            box-shadow: none;
+            opacity: 0.5;
             cursor: not-allowed;
         }
 
         .nav-icon {
             font-size: 20px;
             line-height: 1;
-            font-weight: bold;
         }
 
         /* ============================================
@@ -1016,12 +1012,14 @@
             <div class="modal-body" id="module-content">
                 <!-- 动态内容 -->
             </div>
-            <!-- 导航按钮 -->
+            <!-- 导航按钮（移到底部） -->
             <div class="modal-nav">
-                <button class="nav-btn nav-btn-prev" onclick="prevItem()" id="prev-btn">
+                <button class="nav-btn" onclick="prevItem()" id="prev-btn">
                     <span class="nav-icon">◀</span>
+                    <span>上一个</span>
                 </button>
-                <button class="nav-btn nav-btn-next" onclick="nextItem()" id="next-btn">
+                <button class="nav-btn" onclick="nextItem()" id="next-btn">
+                    <span>下一个</span>
                     <span class="nav-icon">▶</span>
                 </button>
             </div>
@@ -1399,28 +1397,42 @@
             const progress = ((quizState.currentQuestion + 1) / quizState.questions.length * 100).toFixed(0);
 
             content.innerHTML = `
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${progress}%"></div>
-                </div>
-                <div style="text-align: center; margin-bottom: 12px; font-size: 14px; color: var(--color-text-secondary);">
-                    第 ${quizState.currentQuestion + 1}/${quizState.questions.length} 题 | 🏆 得分: ${quizState.score}
-                </div>
-                <div class="word-card" style="text-align: center; padding: 24px 16px;">
-                    <div style="font-size: 14px; color: var(--color-text-secondary); margin-bottom: 12px;">
-                        这个单词的意思是什么？
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px; border-radius: var(--radius-xl); margin-bottom: 16px;">
+                    <div style="color: white; font-size: 12px; margin-bottom: 4px;">📝 单词测试模式</div>
+                    <div style="color: white; font-size: 14px;">
+                        第 ${quizState.currentQuestion + 1}/${quizState.questions.length} 题 | 🏆 得分: ${quizState.score}
                     </div>
-                    <div class="word-main" style="font-size: 32px; margin: 16px 0 24px 0; color: var(--color-primary);">${question.word}</div>
+                    <div class="progress-bar" style="background: rgba(255,255,255,0.3); margin-top: 8px;">
+                        <div class="progress-fill" style="width: ${progress}%; background: white;"></div>
+                    </div>
+                </div>
+
+                <div class="word-card" style="text-align: center; padding: 32px 24px;">
+                    <div style="font-size: 14px; color: var(--color-text-secondary); margin-bottom: 16px;">
+                        ⬇️ 请选择正确的中文释义 ⬇️
+                    </div>
+                    <div class="word-main" style="font-size: 36px; margin: 24px 0; color: var(--color-primary); font-weight: 700;">
+                        ${question.word}
+                    </div>
+                    <div style="font-size: 12px; color: #ef4444; margin-bottom: 20px;">
+                        ⚠️ 测试模式：中文释义已隐藏
+                    </div>
                     <div class="quiz-options">
                         ${question.options.map((option, index) => `
                             <button class="quiz-option-btn" onclick="selectQuizAnswer('${option.replace(/'/g, "\\'")}')">
-                                <span style="font-weight: 600; margin-right: 8px;">${String.fromCharCode(65 + index)}.</span>
+                                <span style="font-weight: 700; margin-right: 8px; color: var(--color-primary);">${String.fromCharCode(65 + index)}.</span>
                                 ${option}
                             </button>
                         `).join('')}
                     </div>
                 </div>
-                <button class="btn btn-primary mt-lg" onclick="submitQuizAnswer()">✅ 提交答案</button>
-                <button class="btn btn-secondary mt-md" onclick="exitQuiz()">❌ 退出测试</button>
+
+                <button class="btn btn-primary mt-lg" onclick="submitQuizAnswer()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                    ✅ 提交答案
+                </button>
+                <button class="btn btn-secondary mt-md" onclick="exitQuiz()">
+                    ❌ 退出测试
+                </button>
             `;
 
             quizState.selectedAnswer = null;
@@ -2461,37 +2473,77 @@
             updateUI();
         }
 
+        // 使用在线词典音频播放单词发音
         function speakWord(word) {
+            // 取消当前正在播放的音频
+            if (window.currentAudio) {
+                window.currentAudio.pause();
+                window.currentAudio = null;
+            }
+
+            // 尝试使用多个在线词典的音频源
+            const audioSources = [
+                // 必应词典（美式发音）
+                `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(word)}`,
+                // 有道词典（美式发音）
+                `https://dict.youdao.com/dictvoice?type=1&audio=${encodeURIComponent(word)}`,
+                // Google Translate TTS（非官方但可用）
+                `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=${encodeURIComponent(word)}`
+            ];
+
+            // 创建音频对象并播放
+            const audio = new Audio();
+
+            // 设置音量（适中，不会太响）
+            audio.volume = 0.7;
+
+            // 尝试播放第一个可用的音频源
+            let sourceIndex = 0;
+
+            function tryNextSource() {
+                if (sourceIndex >= audioSources.length) {
+                    // 所有在线音频都失败了，使用浏览器备用方案
+                    useBrowserSpeech(word);
+                    return;
+                }
+
+                audio.src = audioSources[sourceIndex];
+                sourceIndex++;
+
+                audio.play().then(() => {
+                    console.log('✅ 音频播放成功:', word);
+                    window.currentAudio = audio;
+                }).catch((error) => {
+                    console.warn('⚠️ 音频源播放失败，尝试下一个:', error);
+                    tryNextSource();
+                });
+            }
+
+            // 音频播放结束
+            audio.onended = () => {
+                window.currentAudio = null;
+            };
+
+            // 开始尝试播放
+            tryNextSource();
+        }
+
+        // 浏览器语音合成备用方案
+        function useBrowserSpeech(word) {
             if ('speechSynthesis' in window) {
-                // 取消当前正在播放的语音
                 speechSynthesis.cancel();
 
-                // 等待一小段时间确保取消完成
                 setTimeout(() => {
                     const utterance = new SpeechSynthesisUtterance(word);
-
-                    // 设置语音参数（温和自然的发音）
                     utterance.lang = 'en-US';
-                    utterance.rate = 0.8;   // 语速稍慢，更清晰自然
-                    utterance.pitch = 1.0;  // 正常音调
-                    utterance.volume = 0.6; // 适中音量，不会太响
+                    utterance.rate = 0.8;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 0.5;
 
-                    // 不指定特定语音，让浏览器自动选择最合适的
-                    // 这样可以避免选择到不兼容的语音
-
-                    // 播放语音
                     speechSynthesis.speak(utterance);
-
-                    // 错误处理
-                    utterance.onerror = (event) => {
-                        console.error('语音播放失败:', event.error);
-                        if (event.error === 'not-allowed') {
-                            alert('请在浏览器设置中允许语音播放权限');
-                        }
-                    };
-                }, 100);
+                }, 50);
             } else {
-                alert('您的浏览器不支持语音播放功能\n建议使用最新版本的 Safari、Chrome 或 Edge 浏览器');
+                console.warn('浏览器不支持语音合成');
             }
         }
 

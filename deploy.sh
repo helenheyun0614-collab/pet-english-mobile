@@ -20,7 +20,7 @@ cp /Users/helen/Downloads/Pet/src/index-mobile.html /Users/helen/Downloads/Pet/n
 
 # 更新版本号（添加时间戳）
 TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
-sed -i '' "s/<title>PET英语屋 - 移动端.*<\/title>/<title>PET英语屋 - 移动端 v3.1 ($TIMESTAMP)<\/title>/" /Users/helen/Downloads/Pet/netlify-deploy/index.html
+sed -i '' "s/<title>PET英语屋 - 移动端.*<\/title>/<title>PET英语屋 - 移动端 v3.2 ($TIMESTAMP)<\/title>/" /Users/helen/Downloads/Pet/netlify-deploy/index.html
 
 echo -e "${GREEN}✅ 部署文件已准备${NC}"
 echo ""
@@ -34,13 +34,13 @@ cd /Users/helen/Downloads/Pet
 git add -A
 
 # 提交
-git commit -m "🚀 v3.1: 语音优化+导航按钮+测试界面
+git commit -m "🚀 v3.2: 重大修复和改进
 
 更新内容：
-- 修复语音发音问题（降低音量、减慢语速）
-- 优化导航按钮样式（更大、更明显）
-- 改进测试界面显示（添加选项标号A/B/C/D）
-- 所有功能完善"
+- 导航按钮移到底部，不再遮挡内容
+- 测试界面优化：紫色渐变背景，明显的测试提示
+- 语音API升级：使用在线词典音频（有道/Google）
+- 修复所有已知问题"
 
 # 推送
 git push origin main
