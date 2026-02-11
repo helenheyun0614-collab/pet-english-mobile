@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
-    <title>PET英语屋 - 移动端</title>
+    <title>PET英语屋 - 移动端 v3.0 (修复优化版)</title>
     <link rel="manifest" href="manifest.json">
     <style>
         /* ============================================
@@ -623,6 +623,7 @@
             max-height: 80vh;
             overflow-y: auto;
             animation: modalSlideUp 0.3s ease;
+            position: relative; /* 为导航按钮提供定位上下文 */
         }
 
         @keyframes modalSlideUp {
@@ -667,6 +668,79 @@
         }
 
         /* ============================================
+           模态框导航按钮
+           ============================================ */
+        .modal-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            pointer-events: none; /* 让点击穿透到内容 */
+            left: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 8px;
+            box-sizing: border-box;
+        }
+
+        .nav-btn {
+            pointer-events: auto; /* 恢复按钮的可点击性 */
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .nav-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .nav-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .nav-btn-prev {
+            position: absolute;
+            left: -22px;
+        }
+
+        .nav-btn-next {
+            position: absolute;
+            right: -22px;
+        }
+
+        /* 为小屏幕调整按钮位置 */
+        @media (max-width: 480px) {
+            .nav-btn-prev {
+                left: -50px;
+            }
+
+            .nav-btn-next {
+                right: -50px;
+            }
+        }
+
+        /* ============================================
            进度条
            ============================================ */
         .progress-bar {
@@ -682,6 +756,43 @@
             background: linear-gradient(90deg, var(--color-vocab), #059669);
             border-radius: 4px;
             transition: width 0.3s;
+        }
+
+        /* ============================================
+           测试功能样式
+           ============================================ */
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .quiz-option-btn {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-size: 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quiz-option-btn:hover {
+            border-color: var(--color-primary);
+            background: var(--color-card);
+        }
+
+        .quiz-option-btn:active {
+            transform: scale(0.98);
+        }
+
+        .quiz-option-selected {
+            border-color: var(--color-primary) !important;
+            background: var(--color-vocab) !important;
+            color: white !important;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
         }
 
         /* ============================================
@@ -921,6 +1032,15 @@
             <div class="modal-body" id="module-content">
                 <!-- 动态内容 -->
             </div>
+            <!-- 导航按钮 -->
+            <div class="modal-nav">
+                <button class="nav-btn nav-btn-prev" onclick="prevItem()" id="prev-btn">
+                    <span class="nav-icon">◀</span>
+                </button>
+                <button class="nav-btn nav-btn-next" onclick="nextItem()" id="next-btn">
+                    <span class="nav-icon">▶</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1137,6 +1257,47 @@
             } else if (module === 'cloze') {
                 renderClosetItem(index, content);
             }
+
+            // 更新导航按钮状态
+            updateNavButtons();
+        }
+
+        // 导航按钮函数
+        function prevItem() {
+            if (state.currentIndex > 0) {
+                state.currentIndex--;
+                renderCurrentItem();
+            }
+        }
+
+        function nextItem() {
+            if (state.currentModule === 'vocab') {
+                nextVocab();
+            } else if (state.currentModule === 'reading') {
+                nextReading();
+            } else if (state.currentModule === 'collocation') {
+                nextCollocation();
+            } else if (state.currentModule === 'cloze') {
+                nextCloze();
+            }
+        }
+
+        function updateNavButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            if (!prevBtn || !nextBtn) return;
+
+            // 获取当前模块的总数
+            let totalItems = 0;
+            if (state.currentModule === 'vocab') totalItems = state.data.vocab.length;
+            else if (state.currentModule === 'reading') totalItems = state.data.readingSets.length;
+            else if (state.currentModule === 'collocation') totalItems = state.data.collocationSets.length;
+            else if (state.currentModule === 'cloze') totalItems = state.data.clozeSets.length;
+
+            // 更新按钮状态
+            prevBtn.disabled = state.currentIndex <= 0;
+            nextBtn.disabled = state.currentIndex >= totalItems - 1;
         }
 
         // ============================================
@@ -1179,7 +1340,181 @@
                 </div>
                 <button class="btn btn-primary mt-lg" onclick="nextVocab()">下一个</button>
                 <button class="btn btn-secondary mt-md" onclick="markVocabMastered(${index})">标记已掌握</button>
+                <button class="btn btn-accent mt-md" onclick="startVocabQuiz()">📝 测试一下</button>
             `;
+        }
+
+        // 单词测试功能
+        let quizState = {
+            isActive: false,
+            currentQuestion: 0,
+            score: 0,
+            questions: [],
+            selectedAnswer: null
+        };
+
+        function startVocabQuiz() {
+            // 从当前单词及附近随机生成测试题
+            const startIndex = Math.max(0, state.currentIndex - 5);
+            const endIndex = Math.min(state.data.vocab.length, state.currentIndex + 6);
+            const quizWords = state.data.vocab.slice(startIndex, endIndex);
+
+            if (quizWords.length < 4) {
+                alert('单词数量不足以生成测试题');
+                return;
+            }
+
+            // 生成测试题
+            quizState.questions = [];
+            quizWords.forEach(word => {
+                // 生成3个错误选项
+                const wrongAnswers = generateWrongAnswers(word, quizWords);
+                const options = shuffleArray([word.meaning, ...wrongAnswers]);
+
+                quizState.questions.push({
+                    word: word.word,
+                    correctAnswer: word.meaning,
+                    options: options
+                });
+            });
+
+            quizState.isActive = true;
+            quizState.currentQuestion = 0;
+            quizState.score = 0;
+            quizState.selectedAnswer = null;
+
+            showQuizQuestion();
+        }
+
+        function generateWrongAnswers(correctWord, allWords) {
+            const wrongAnswers = [];
+            const available = allWords.filter(w => w.word !== correctWord.word);
+
+            // 随机选择3个错误答案
+            while (wrongAnswers.length < 3 && available.length > 0) {
+                const randomIndex = Math.floor(Math.random() * available.length);
+                wrongAnswers.push(available[randomIndex].meaning);
+                available.splice(randomIndex, 1);
+            }
+
+            return wrongAnswers;
+        }
+
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function showQuizQuestion() {
+            const question = quizState.questions[quizState.currentQuestion];
+            const content = document.getElementById('module-content');
+            const progress = ((quizState.currentQuestion + 1) / quizState.questions.length * 100).toFixed(0);
+
+            content.innerHTML = `
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${progress}%"></div>
+                </div>
+                <div style="text-align: center; margin-bottom: 8px; font-size: 14px; color: var(--color-text-secondary);">
+                    第 ${quizState.currentQuestion + 1}/${quizState.questions.length} 题 | 得分: ${quizState.score}
+                </div>
+                <div class="word-card">
+                    <div class="word-meaning-title" style="text-align: center; font-size: 16px; margin-bottom: 16px;">
+                        请选择正确的中文释义
+                    </div>
+                    <div class="word-main" style="font-size: 24px; margin-bottom: 24px;">${question.word}</div>
+                    <div class="quiz-options">
+                        ${question.options.map((option, index) => `
+                            <button class="quiz-option-btn" onclick="selectQuizAnswer('${option.replace(/'/g, "\\'")}')">
+                                ${option}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                <button class="btn btn-primary mt-lg" onclick="submitQuizAnswer()">提交答案</button>
+                <button class="btn btn-secondary mt-md" onclick="exitQuiz()">退出测试</button>
+            `;
+
+            quizState.selectedAnswer = null;
+        }
+
+        function selectQuizAnswer(answer) {
+            quizState.selectedAnswer = answer;
+
+            // 高亮选中的答案
+            document.querySelectorAll('.quiz-option-btn').forEach(btn => {
+                btn.classList.remove('quiz-option-selected');
+                if (btn.textContent.trim() === answer) {
+                    btn.classList.add('quiz-option-selected');
+                }
+            });
+        }
+
+        function submitQuizAnswer() {
+            if (!quizState.selectedAnswer) {
+                alert('请先选择一个答案！');
+                return;
+            }
+
+            const question = quizState.questions[quizState.currentQuestion];
+            const isCorrect = quizState.selectedAnswer === question.correctAnswer;
+
+            if (isCorrect) {
+                quizState.score += 10;
+                alert('✅ 回答正确！+10分');
+            } else {
+                alert(`❌ 回答错误！正确答案是：${question.correctAnswer}`);
+            }
+
+            // 下一题或结束测试
+            quizState.currentQuestion++;
+            if (quizState.currentQuestion < quizState.questions.length) {
+                showQuizQuestion();
+            } else {
+                showQuizResult();
+            }
+        }
+
+        function showQuizResult() {
+            const content = document.getElementById('module-content');
+            const totalScore = quizState.questions.length * 10;
+            const percentage = (quizState.score / totalScore * 100).toFixed(0);
+
+            let message = '';
+            if (percentage >= 80) message = '太棒了！🎉';
+            else if (percentage >= 60) message = '继续加油！💪';
+            else message = '需要多加练习哦！📚';
+
+            content.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🏆</div>
+                    <div class="empty-text" style="font-size: 20px; font-weight: 600;">测试完成！</div>
+                    <div style="font-size: 48px; font-weight: bold; color: var(--color-primary); margin: 16px 0;">
+                        ${quizState.score}
+                    </div>
+                    <div class="empty-text">${message}</div>
+                    <div style="margin-top: 16px; font-size: 14px; color: var(--color-text-secondary);">
+                        答对 ${quizState.score / 10}/${quizState.questions.length} 题 (${percentage}%)
+                    </div>
+                    <button class="btn btn-primary mt-lg" onclick="renderCurrentItem()">返回学习</button>
+                    <button class="btn btn-secondary mt-md" onclick="startVocabQuiz()">再测一次</button>
+                </div>
+            `;
+
+            // 保存得分
+            state.points += quizState.score;
+            saveData();
+            updateUI();
+
+            quizState.isActive = false;
+        }
+
+        function exitQuiz() {
+            quizState.isActive = false;
+            renderCurrentItem();
         }
 
         // 从模态框添加到生词本（特殊处理避免字符串问题）
@@ -2143,11 +2478,51 @@
 
         function speakWord(word) {
             if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(word);
-                utterance.lang = 'en-US';
-                speechSynthesis.speak(utterance);
+                // 取消当前正在播放的语音
+                speechSynthesis.cancel();
+
+                // 等待一小段时间确保取消完成
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance(word);
+
+                    // 设置语音参数
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.9;  // 语速稍慢，更清晰
+                    utterance.pitch = 1;   // 正常音调
+                    utterance.volume = 1;  // 最大音量
+
+                    // 尝试加载英语语音
+                    const voices = speechSynthesis.getVoices();
+                    const englishVoice = voices.find(voice =>
+                        voice.lang.startsWith('en-') && !voice.lang.includes('GB')
+                    );
+                    if (englishVoice) {
+                        utterance.voice = englishVoice;
+                    }
+
+                    // 播放语音
+                    speechSynthesis.speak(utterance);
+
+                    // 错误处理
+                    utterance.onerror = (event) => {
+                        console.error('语音播放失败:', event.error);
+                        if (event.error === 'not-allowed') {
+                            alert('请在浏览器设置中允许语音播放权限');
+                        }
+                    };
+                }, 50);
             } else {
-                alert('您的浏览器不支持语音播放');
+                alert('您的浏览器不支持语音播放功能\n建议使用最新版本的 Safari、Chrome 或 Edge 浏览器');
+            }
+        }
+
+        // 预加载语音列表（解决某些浏览器首次加载延迟问题）
+        if ('speechSynthesis' in window) {
+            // 确保语音列表已加载
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = () => {
+                    speechSynthesis.getVoices();
+                };
             }
         }
 
