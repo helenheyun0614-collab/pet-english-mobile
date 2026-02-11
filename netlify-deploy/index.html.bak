@@ -1709,9 +1709,7 @@
                     const result = {
                         word: entry.word,
                         phonetic: entry.phonetic || entry.phonetics?.[0]?.text || '',
-                        meanings: [],
-                        chineseMeanings: [],
-                        examples: []
+                        meanings: []
                     };
 
                     // 提取释义和例句
@@ -1720,41 +1718,10 @@
                             const meaningObj = {
                                 partOfSpeech: meaning.partOfSpeech,
                                 definitions: meaning.definitions.slice(0, 3).map(d => d.definition),
-                                examples: []
+                                examples: meaning.definitions.slice(0, 3).map(d => d.example).filter(e => e)
                             };
-
-                            // 提取例句
-                            meaning.definitions.slice(0, 5).forEach(d => {
-                                if (d.example) {
-                                    meaningObj.examples.push(d.example);
-                                    result.examples.push(d.example);
-                                }
-                            });
-
                             result.meanings.push(meaningObj);
                         });
-                    }
-
-                    // 获取中文翻译
-                    try {
-                        const transResponse = await Promise.race([
-                            fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q=${encodeURIComponent(wordTrimmed)}`),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
-                        ]);
-
-                        if (transResponse.ok) {
-                            const transData = await transResponse.json();
-                            if (transData && transData[0] && transData[0][0]) {
-                                // 收集所有翻译
-                                const translations = [];
-                                transData[0].forEach(item => {
-                                    if (item[0]) translations.push(item[0]);
-                                });
-                                result.chineseMeanings = [...new Set(translations)].slice(0, 3);
-                            }
-                        }
-                    } catch (transError) {
-                        console.log('Translation failed:', transError.message);
                     }
 
                     return result;
@@ -1837,14 +1804,6 @@
             html += `<button class="word-btn" onclick="addDictToWordbook('${result.word}')">⭐</button>`;
             html += '</div>';
 
-            // 中文释义（始终显示）
-            if (result.chineseMeanings && result.chineseMeanings.length > 0) {
-                html += '<div class="word-meaning">';
-                html += '<div class="word-meaning-title">🇨🇳 中文释义</div>';
-                html += `<div class="word-meaning-text">${result.chineseMeanings.join('；')}</div>`;
-                html += '</div>';
-            }
-
             // 英文释义
             if (result.meanings && result.meanings.length > 0) {
                 html += '<div class="word-meaning">';
@@ -1864,36 +1823,23 @@
                 html += '</div>';
             }
 
-            // 场景例句（显示多个例句）
-            if (result.examples && result.examples.length > 0) {
+            // 中文释义（只有英文输入时显示）
+            if (!isChineseInput && result.chineseMeanings && result.chineseMeanings.length > 0) {
                 html += '<div class="word-meaning">';
-                html += '<div class="word-meaning-title">📚 场景例句</div>';
-
-                result.examples.slice(0, 3).forEach((example, index) => {
-                    html += `<div class="word-example">"${example}"</div>`;
-                });
-
+                html += '<div class="word-meaning-title">🇨🇳 中文释义</div>';
+                html += `<div class="word-meaning-text">${result.chineseMeanings.join('；')}</div>`;
                 html += '</div>';
-            } else if (result.example) {
+            }
+
+            // 例句
+            if (result.example || (result.meanings && result.meanings[0]?.examples?.length > 0)) {
                 html += '<div class="word-meaning">';
                 html += '<div class="word-meaning-title">📚 例句</div>';
-                html += `<div class="word-example">"${result.example}"</div>`;
-                html += '</div>';
-            } else if (result.meanings && result.meanings[0]?.examples?.length > 0) {
-                // 从 meanings 中提取例句
-                html += '<div class="word-meaning">';
-                html += '<div class="word-meaning-title">📚 场景例句</div>';
 
-                let count = 0;
-                for (const meaning of result.meanings) {
-                    if (meaning.examples && meaning.examples.length > 0) {
-                        for (const example of meaning.examples) {
-                            if (count >= 3) break;
-                            html += `<div class="word-example">"${example}"</div>`;
-                            count++;
-                        }
-                    }
-                    if (count >= 3) break;
+                if (result.example) {
+                    html += `<div class="word-example">"${result.example}"</div>`;
+                } else if (result.meanings[0].examples && result.meanings[0].examples.length > 0) {
+                    html += `<div class="word-example">"${result.meanings[0].examples[0]}"</div>`;
                 }
 
                 html += '</div>';
@@ -2369,26 +2315,12 @@
                 });
             }
 
-            // 适配所有浏览器的触摸处理
-            // 使用 passive: true 确保滚动流畅，只在需要时阻止缩放
-            if (typeof TouchEvent !== 'undefined') {
-                document.addEventListener('touchmove', function(e) {
-                    // 检查是否是多点触摸（双指缩放）
-                    if (e.touches && e.touches.length > 1) {
-                        e.preventDefault();
-                    }
-                }, { passive: false });
-            }
-
-            // 额外：阻止双击缩放（兼容部分浏览器）
-            let lastTouchEnd = 0;
-            document.addEventListener('touchend', function(e) {
-                const now = Date.now();
-                if (now - lastTouchEnd <= 300) {
+            // 阻止双击缩放
+            document.addEventListener('touchmove', function(e) {
+                if (e.scale !== 1) {
                     e.preventDefault();
                 }
-                lastTouchEnd = now;
-            }, false);
+            }, { passive: false });
         });
 
         // 监听storage事件，实现多端数据同步
