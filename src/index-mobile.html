@@ -2199,37 +2199,46 @@
             }
 
             // 场景例句（显示多个例句）
-            if (result.examples && result.examples.length > 0) {
+            const hasExamples = (result.examples && result.examples.length > 0) ||
+                               (result.meanings && result.meanings.some(m => m.examples && m.examples.length > 0));
+
+            if (hasExamples) {
                 html += '<div class="word-meaning">';
                 html += '<div class="word-meaning-title">📚 场景例句</div>';
 
-                result.examples.slice(0, 3).forEach((example, index) => {
-                    html += `<div class="word-example">"${example}"</div>`;
-                });
+                let exampleCount = 0;
+                const maxExamples = 3;
 
-                html += '</div>';
-            } else if (result.example) {
-                html += '<div class="word-meaning">';
-                html += '<div class="word-meaning-title">📚 例句</div>';
-                html += `<div class="word-example">"${result.example}"</div>`;
-                html += '</div>';
-            } else if (result.meanings && result.meanings[0]?.examples?.length > 0) {
-                // 从 meanings 中提取例句
-                html += '<div class="word-meaning">';
-                html += '<div class="word-meaning-title">📚 场景例句</div>';
-
-                let count = 0;
-                for (const meaning of result.meanings) {
-                    if (meaning.examples && meaning.examples.length > 0) {
-                        for (const example of meaning.examples) {
-                            if (count >= 3) break;
+                // 优先显示 result.examples
+                if (result.examples && result.examples.length > 0) {
+                    result.examples.slice(0, maxExamples).forEach((example, index) => {
+                        if (exampleCount < maxExamples) {
                             html += `<div class="word-example">"${example}"</div>`;
-                            count++;
+                            exampleCount++;
                         }
-                    }
-                    if (count >= 3) break;
+                    });
                 }
 
+                // 如果不够，从 meanings 中提取
+                if (exampleCount < maxExamples && result.meanings) {
+                    for (const meaning of result.meanings) {
+                        if (meaning.examples && meaning.examples.length > 0) {
+                            for (const example of meaning.examples) {
+                                if (exampleCount >= maxExamples) break;
+                                html += `<div class="word-example">"${example}"</div>`;
+                                exampleCount++;
+                            }
+                        }
+                        if (exampleCount >= maxExamples) break;
+                    }
+                }
+
+                html += '</div>';
+            } else {
+                // 没有例句时显示提示
+                html += '<div class="word-meaning">';
+                html += '<div class="word-meaning-title">📚 场景例句</div>';
+                html += '<div style="font-size: 14px; color: var(--color-text-secondary); font-style: italic;">暂无例句</div>';
                 html += '</div>';
             }
 
