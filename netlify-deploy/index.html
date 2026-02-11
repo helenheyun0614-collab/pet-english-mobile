@@ -2021,6 +2021,20 @@
             input.value = '';
         }
 
+        // 生成简单的例句（当API没有返回例句时）
+        function generateSimpleExample(word) {
+            const wordCapitalized = word.charAt(0).toUpperCase() + word.slice(1);
+            const templates = [
+                `I want to learn more about ${wordCapitalized}.`,
+                `She is very interested in ${wordCapitalized}.`,
+                `Can you explain what ${wordCapitalized} means?`,
+                `He has been studying ${wordCapitalized} for years.`,
+                `This book teaches us about ${wordCapitalized}.`
+            ];
+
+            return templates[Math.floor(Math.random() * templates.length)];
+        }
+
         // 查询英文词典
         async function queryEnglishDictionary(word) {
             const wordTrimmed = word.trim().toLowerCase();
@@ -2057,7 +2071,7 @@
                                 examples: []
                             };
 
-                            // 提取例句
+                            // 提取例句（从 definitions 中）
                             meaning.definitions.slice(0, 5).forEach(d => {
                                 if (d.example) {
                                     meaningObj.examples.push(d.example);
@@ -2065,8 +2079,45 @@
                                 }
                             });
 
+                            // 提取例句（从 meaning 的根级 examples 中）
+                            if (meaning.examples && meaning.examples.length > 0) {
+                                meaning.examples.slice(0, 3).forEach(example => {
+                                    if (example.text) {
+                                        meaningObj.examples.push(example.text);
+                                        result.examples.push(example.text);
+                                    }
+                                });
+                            }
+
                             result.meanings.push(meaningObj);
                         });
+                    }
+
+                    // 如果没有找到例句，尝试从 entry 级别提取
+                    if (!result.examples || result.examples.length === 0) {
+                        if (entry.etymologies && entry.etymologies.length > 0) {
+                            // 词源信息通常包含例句
+                            entry.etymologies.slice(0, 2).forEach(etymology => {
+                                if (etymology && typeof etymology === 'string') {
+                                    // 清理文本
+                                    const cleaned = etymology.replace(/\[\d+\]/g, '').trim();
+                                    if (cleaned && cleaned.length > 20 && cleaned.includes(' ')) {
+                                        result.examples.push(cleaned);
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    // 调试日志
+                    console.log('API返回的例句数量:', result.examples.length);
+
+                    // 如果没有找到例句，生成一个简单的例句
+                    if (!result.examples || result.examples.length === 0) {
+                        const simpleExamples = generateSimpleExample(wordTrimmed);
+                        if (simpleExamples) {
+                            result.examples = [simpleExamples];
+                        }
                     }
 
                     // 获取中文翻译
