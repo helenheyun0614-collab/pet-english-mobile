@@ -1440,10 +1440,13 @@
         function selectQuizAnswer(answer) {
             quizState.selectedAnswer = answer;
 
-            // 高亮选中的答案
+            // 高亮选中的答案（匹配完整文本或提取单词部分）
             document.querySelectorAll('.quiz-option-btn').forEach(btn => {
                 btn.classList.remove('quiz-option-selected');
-                if (btn.textContent.trim() === answer) {
+                const btnText = btn.textContent.trim();
+                // 检查是否匹配（去掉标签前缀后比较）
+                const btnAnswer = btnText.replace(/^[A-Z]\.\s*/, '');
+                if (btnAnswer === answer || btnText === answer) {
                     btn.classList.add('quiz-option-selected');
                 }
             });
